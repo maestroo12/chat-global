@@ -51,7 +51,7 @@ const loginBtn = document.getElementById("login-btn");
 // ===== STATE =====
 const MAX_ANON = 30; // batas pesan tamu per 24 jam
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_MESSAGES = 99999999; // jumlah pesan yang disimpan di database
+const MAX_MESSAGES = 10; // jumlah pesan yang disimpan di database
 
 let currentUser = null;
 let semuaPesan = [];
@@ -64,9 +64,15 @@ let aktifDevice = null;
 let serverOffset = 0;
 
 // ID perangkat: tetap sama walau logout / login Google / ganti akun anonim
+function buatId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
 let deviceId = localStorage.getItem("chatDeviceId");
 if (!deviceId) {
-  deviceId = crypto.randomUUID();
+  deviceId = buatId();
   localStorage.setItem("chatDeviceId", deviceId);
 }
 
@@ -231,7 +237,7 @@ function terapkanLimit() {
     const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
     input.disabled = true;
     sendBtn.disabled = true;
-    input.placeholder = `Habis limit lu tolol. Coba ${jam} jam lagi, atau login Google.`;
+    input.placeholder = `Batas tamu habis. Coba lagi ${jam} jam lagi, atau login Google.`;
   } else {
     input.disabled = false;
     sendBtn.disabled = false;
@@ -262,7 +268,10 @@ function pantauSisa(user) {
       });
       timerLimit = setInterval(terapkanLimit, 60000);
     })
-    .catch((err) => console.error("Gagal menyiapkan limit Orang Asing:", err));
+    .catch((err) => {
+      console.error("Gagal menyiapkan limit tamu:", err);
+      input.placeholder = "Gagal menyiapkan chat: " + (err.code || err.message);
+    });
 }
 
 // ===== KIRIM PESAN =====
@@ -274,11 +283,11 @@ async function kirimPesan() {
   const google = isGoogle(currentUser);
   const uid = currentUser.uid;
   const name = google
-    ? currentUser.displayName || "Pengguna Google"
-    : nameInput.value.trim() || "Orang Asing";
+    ? currentUser.displayName || ""
+    : nameInput.value.trim() || "Tamu";
 
   const key = push(chatRef).key;
-  const pesan = { name, text, uid, timestamp: Date.now() };
+  const pesan = { name, text, uid, timestamp: Math.round(Date.now() + serverOffset) };
   if (google) pesan.verified = true;
 
   const updates = { [`chat/${key}`]: pesan };
@@ -303,8 +312,8 @@ async function kirimPesan() {
         updates[path] = { count: lim.count + 1, start: lim.start };
       }
     } catch (err) {
-      console.error("Gagal cek limit Orang Asing:", err);
-      alert("Gagal memeriksa batas pesan. Coba lagi.");
+      console.error("Gagal cek limit tamu:", err);
+      alert("Gagal memeriksa batas pesan: " + (err.code || err.message));
       return;
     }
   }
@@ -316,7 +325,7 @@ async function kirimPesan() {
     hapusPesanLama();
   } catch (err) {
     console.error("Pesan gagal terkirim:", err);
-    alert("Pesan gagal terkirim. Coba lagi.");
+    alert("Pesan gagal terkirim: " + (err.code || err.message));
   }
 }
 
@@ -339,7 +348,7 @@ function mulaiPresence(user) {
   const userRef = ref(db, `users/${user.uid}`);
   const nama = isGoogle(user)
     ? user.displayName || "Pengguna Google"
-    : nameInput.value.trim() || "Orang Asing";
+    : nameInput.value.trim() || "Tamu";
 
   update(userRef, { name: nama, online: true, lastSeen: Date.now() });
   heartbeat = setInterval(() => {
@@ -372,7 +381,10 @@ loginBtn.addEventListener("click", async () => {
 // ===== STATUS AUTH =====
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    signInAnonymously(auth).catch((err) => console.error("Anonymous gagal:", err));
+    signInAnonymously(auth).catch((err) => {
+      console.error("Anonymous gagal:", err);
+      input.placeholder = "Gagal masuk sebagai tamu: " + (err.code || err.message);
+    });
     return;
   }
 
