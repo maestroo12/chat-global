@@ -139,7 +139,7 @@ const userRef = ref(db, `users/${userId}`);
 // Tandai online
 update(ref(db), {
   [`users/${userId}`]: {
-    name: nameInput.value.trim() || "Anon",
+    name: nameInput.value.trim() || "Anonymous",
     online: true,
     lastSeen: Date.now()
   }
