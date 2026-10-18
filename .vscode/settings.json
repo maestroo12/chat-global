@@ -1,0 +1,14 @@
+{
+    "window.zoomLevel": 1,
+    "editor.fontSize": 12,
+    "editor.wordWrap": "on",
+    "workbench.colorTheme": "Dark Modern",
+    "editor.formatOnSave": true,
+    "editor.quickSuggestions": {
+        "other": "on",
+        "comments": "off",
+        "strings": "on"
+    },
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.inlineSuggest.enabled": false,
+}   
