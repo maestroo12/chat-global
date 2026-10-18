@@ -51,7 +51,7 @@ const loginBtn = document.getElementById("login-btn");
 // ===== STATE =====
 const MAX_ANON = 30; // batas pesan tamu per 24 jam
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_MESSAGES = 10; // jumlah pesan yang disimpan di database
+const MAX_MESSAGES = 999999999999999; // jumlah pesan yang disimpan di database
 
 let currentUser = null;
 let semuaPesan = [];
@@ -284,7 +284,7 @@ async function kirimPesan() {
   const uid = currentUser.uid;
   const name = google
     ? currentUser.displayName || ""
-    : nameInput.value.trim() || "Tamu";
+    : nameInput.value.trim() || "Orang Asing";
 
   const key = push(chatRef).key;
   const pesan = { name, text, uid, timestamp: Math.round(Date.now() + serverOffset) };
@@ -312,7 +312,7 @@ async function kirimPesan() {
         updates[path] = { count: lim.count + 1, start: lim.start };
       }
     } catch (err) {
-      console.error("Gagal cek limit tamu:", err);
+      console.error("Gagal cek limit Orang Asing:", err);
       alert("Gagal memeriksa batas pesan: " + (err.code || err.message));
       return;
     }
@@ -348,7 +348,7 @@ function mulaiPresence(user) {
   const userRef = ref(db, `users/${user.uid}`);
   const nama = isGoogle(user)
     ? user.displayName || "Pengguna Google"
-    : nameInput.value.trim() || "Tamu";
+    : nameInput.value.trim() || "Orang Asing";
 
   update(userRef, { name: nama, online: true, lastSeen: Date.now() });
   heartbeat = setInterval(() => {
@@ -383,7 +383,7 @@ onAuthStateChanged(auth, (user) => {
   if (!user) {
     signInAnonymously(auth).catch((err) => {
       console.error("Anonymous gagal:", err);
-      input.placeholder = "Gagal masuk sebagai tamu: " + (err.code || err.message);
+      input.placeholder = "Gagal masuk sebagai Orang Asing: " + (err.code || err.message);
     });
     return;
   }
