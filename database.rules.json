@@ -1,0 +1,35 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "chat": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (!newData.exists() || !data.exists())",
+        ".validate": "newData.hasChildren(['name', 'text', 'uid', 'timestamp']) && (auth.token.firebase.sign_in_provider === 'google.com' ? (newData.child('verified').val() === true && newData.child('name').val() === auth.token.name) : (!newData.child('verified').exists() && newData.parent().parent().child('msgCount').child(auth.uid).val() === (root.child('msgCount').child(auth.uid).exists() ? root.child('msgCount').child(auth.uid).val() + 1 : 1) && newData.parent().parent().child('msgCount').child(auth.uid).val() <= 30))",
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+        "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
+        "uid": { ".validate": "newData.val() === auth.uid" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 300000" },
+        "verified": { ".validate": "newData.isBoolean()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "msgCount": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.val() === (data.exists() ? data.val() + 1 : 1)",
+        ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+      }
+    },
+
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}

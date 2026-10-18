@@ -2,27 +2,53 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f766e" />
     <link rel="stylesheet" href="style.css" />
     <title>Global Chat Jordan</title>
   </head>
 
   <body>
     <div id="chat-container">
-      <div id="header">
-        <h3>Global Chat Jordan</h3>
-        <div id="header-right">
-          <button id="login-btn">Login Google</button>
-          <span id="online-status">🟢 Online</span>
+      <header id="header">
+        <div id="header-info">
+          <h1>Global Chat Jordan</h1>
+          <span id="online-status"><i class="dot"></i>Online</span>
         </div>
-      </div>
+        <button id="login-btn" type="button">Login Google</button>
+      </header>
+
+      <main id="messages" aria-live="polite"></main>
 
       <div id="input-area">
-        <input type="text" id="user-name" placeholder="Nama kamu" />
-        <input type="text" id="message-input" placeholder="Ketik pesan..." />
-        <button id="send-btn">Kirim</button>
+        <input
+          type="text"
+          id="user-name"
+          placeholder="Nama kamu"
+          autocomplete="nickname"
+          maxlength="24"
+        />
+        <div id="compose">
+          <input
+            type="text"
+            id="message-input"
+            placeholder="Ketik pesan"
+            autocomplete="off"
+            enterkeyhint="send"
+          />
+          <button id="send-btn" type="button" aria-label="Kirim pesan">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
-      <div id="messages"></div>
     </div>
 
     <script type="module" src="script.js"></script>
