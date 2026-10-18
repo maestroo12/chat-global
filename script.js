@@ -4,6 +4,8 @@ import {
   ref,
   push,
   get,
+  set,
+  serverTimestamp,
   onValue,
   remove,
   update
@@ -47,14 +49,31 @@ const onlineStatus = document.getElementById("online-status");
 const loginBtn = document.getElementById("login-btn");
 
 // ===== STATE =====
-const MAX_ANON = 30; // batas pesan untuk tamu (anonymous)
-const MAX_MESSAGES = 999; // jumlah pesan yang disimpan di database
+const MAX_ANON = 30; // batas pesan tamu per 24 jam
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_MESSAGES = 99999999; // jumlah pesan yang disimpan di database
 
 let currentUser = null;
 let semuaPesan = [];
 let listenerAktif = false;
 let heartbeat = null;
 let stopPantauSisa = null;
+let timerLimit = null;
+let limitData = null; // { count, start } milik perangkat ini
+let aktifDevice = null;
+let serverOffset = 0;
+
+// ID perangkat: tetap sama walau logout / login Google / ganti akun anonim
+let deviceId = localStorage.getItem("chatDeviceId");
+if (!deviceId) {
+  deviceId = crypto.randomUUID();
+  localStorage.setItem("chatDeviceId", deviceId);
+}
+
+// Selisih jam server, supaya hitungan 24 jam tidak bergantung jam HP/laptop
+onValue(ref(db, ".info/serverTimeOffset"), (snap) => {
+  serverOffset = snap.val() || 0;
+});
 
 const isGoogle = (user) => !!user && !user.isAnonymous;
 
@@ -179,10 +198,52 @@ function hapusPesanLama() {
   );
 }
 
-// ===== SISA PESAN TAMU =====
+// ===== LIMIT TAMU (per perangkat, 24 jam) =====
+async function daftarkanPerangkat(user) {
+  // Hubungkan akun anonim ini ke ID perangkat. Hanya bisa ditulis sekali per akun anonim.
+  const mapRef = ref(db, `anonDevice/${user.uid}`);
+  const snap = await get(mapRef);
+  if (snap.exists()) {
+    deviceId = snap.val();
+    localStorage.setItem("chatDeviceId", deviceId);
+    return deviceId;
+  }
+  await set(mapRef, deviceId);
+  return deviceId;
+}
+
+function statusLimit() {
+  const now = Date.now() + serverOffset;
+  if (!limitData || now - limitData.start >= DAY_MS) {
+    return { sisa: MAX_ANON };
+  }
+  return {
+    sisa: MAX_ANON - limitData.count,
+    bukaLagi: limitData.start + DAY_MS - now
+  };
+}
+
+function terapkanLimit() {
+  if (isGoogle(currentUser)) return;
+  const st = statusLimit();
+
+  if (st.sisa <= 0) {
+    const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = `Habis limit lu tolol. Coba ${jam} jam lagi, atau login Google.`;
+  } else {
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = `Ketik pesan (sisa ${st.sisa})`;
+  }
+}
+
 function pantauSisa(user) {
   if (stopPantauSisa) stopPantauSisa();
   stopPantauSisa = null;
+  clearInterval(timerLimit);
+  limitData = null;
 
   if (isGoogle(user)) {
     input.disabled = false;
@@ -191,18 +252,17 @@ function pantauSisa(user) {
     return;
   }
 
-  stopPantauSisa = onValue(ref(db, `msgCount/${user.uid}`), (snap) => {
-    const sisa = MAX_ANON - (snap.val() || 0);
-    if (sisa <= 0) {
-      input.disabled = true;
-      sendBtn.disabled = true;
-      input.placeholder = "Batas 30 pesan tamu habis. Login Google untuk lanjut.";
-    } else {
-      input.disabled = false;
-      sendBtn.disabled = false;
-      input.placeholder = `Ketik pesan (sisa ${sisa})`;
-    }
-  });
+  daftarkanPerangkat(user)
+    .then((dev) => {
+      if (currentUser?.uid !== user.uid) return; // akun sudah berganti
+      aktifDevice = dev;
+      stopPantauSisa = onValue(ref(db, `deviceLimit/${dev}`), (snap) => {
+        limitData = snap.val();
+        terapkanLimit();
+      });
+      timerLimit = setInterval(terapkanLimit, 60000);
+    })
+    .catch((err) => console.error("Gagal menyiapkan limit Orang Asing:", err));
 }
 
 // ===== KIRIM PESAN =====
@@ -215,7 +275,7 @@ async function kirimPesan() {
   const uid = currentUser.uid;
   const name = google
     ? currentUser.displayName || "Pengguna Google"
-    : nameInput.value.trim() || "Tamu";
+    : nameInput.value.trim() || "Orang Asing";
 
   const key = push(chatRef).key;
   const pesan = { name, text, uid, timestamp: Date.now() };
@@ -223,12 +283,30 @@ async function kirimPesan() {
 
   const updates = { [`chat/${key}`]: pesan };
 
-  // Tamu: pesan dan penghitung ditulis bersamaan (atomik) supaya batasnya tidak bisa dilewati
+  // Tamu: pesan dan penghitung perangkat ditulis bersamaan (atomik).
+  // Database Rules menolak pesan tamu kalau penghitung tidak ikut naik.
   if (!google) {
-    const snap = await get(ref(db, `msgCount/${uid}`));
-    const terpakai = snap.val() || 0;
-    if (terpakai >= MAX_ANON) return;
-    updates[`msgCount/${uid}`] = terpakai + 1;
+    try {
+      if (!aktifDevice) aktifDevice = await daftarkanPerangkat(currentUser);
+      const snap = await get(ref(db, `deviceLimit/${aktifDevice}`));
+      const lim = snap.val();
+      const now = Date.now() + serverOffset;
+      const path = `deviceLimit/${aktifDevice}`;
+
+      if (!lim || now - lim.start >= DAY_MS) {
+        updates[path] = { count: 1, start: serverTimestamp() };
+      } else if (lim.count >= MAX_ANON) {
+        limitData = lim;
+        terapkanLimit();
+        return;
+      } else {
+        updates[path] = { count: lim.count + 1, start: lim.start };
+      }
+    } catch (err) {
+      console.error("Gagal cek limit Orang Asing:", err);
+      alert("Gagal memeriksa batas pesan. Coba lagi.");
+      return;
+    }
   }
 
   try {
@@ -261,7 +339,7 @@ function mulaiPresence(user) {
   const userRef = ref(db, `users/${user.uid}`);
   const nama = isGoogle(user)
     ? user.displayName || "Pengguna Google"
-    : nameInput.value.trim() || "Tamu";
+    : nameInput.value.trim() || "Orang Asing";
 
   update(userRef, { name: nama, online: true, lastSeen: Date.now() });
   heartbeat = setInterval(() => {

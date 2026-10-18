@@ -7,7 +7,7 @@
       ".read": "auth != null",
       "$id": {
         ".write": "auth != null && (!newData.exists() || !data.exists())",
-        ".validate": "newData.hasChildren(['name', 'text', 'uid', 'timestamp']) && (auth.token.firebase.sign_in_provider === 'google.com' ? (newData.child('verified').val() === true && newData.child('name').val() === auth.token.name) : (!newData.child('verified').exists() && newData.parent().parent().child('msgCount').child(auth.uid).val() === (root.child('msgCount').child(auth.uid).exists() ? root.child('msgCount').child(auth.uid).val() + 1 : 1) && newData.parent().parent().child('msgCount').child(auth.uid).val() <= 30))",
+        ".validate": "newData.hasChildren(['name', 'text', 'uid', 'timestamp']) && (auth.token.firebase.sign_in_provider === 'google.com' ? (newData.child('verified').val() === true && newData.child('name').val() === auth.token.name) : (!newData.child('verified').exists() && root.child('anonDevice').child(auth.uid).exists() && (newData.parent().parent().child('deviceLimit').child(root.child('anonDevice').child(auth.uid).val()).child('count').val() !== root.child('deviceLimit').child(root.child('anonDevice').child(auth.uid).val()).child('count').val() || newData.parent().parent().child('deviceLimit').child(root.child('anonDevice').child(auth.uid).val()).child('start').val() !== root.child('deviceLimit').child(root.child('anonDevice').child(auth.uid).val()).child('start').val())))",
         "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
         "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
         "uid": { ".validate": "newData.val() === auth.uid" },
@@ -17,11 +17,22 @@
       }
     },
 
-    "msgCount": {
+    "anonDevice": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && newData.val() === (data.exists() ? data.val() + 1 : 1)",
-        ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+        ".write": "auth != null && auth.uid === $uid && !data.exists()",
+        ".validate": "newData.isString() && newData.val().length >= 20 && newData.val().length <= 64"
+      }
+    },
+
+    "deviceLimit": {
+      "$dev": {
+        ".read": "auth != null",
+        ".write": "auth != null && newData.exists()",
+        ".validate": "newData.hasChildren(['count', 'start']) && ((!data.exists() || now - data.child('start').val() >= 86400000) ? (newData.child('count').val() === 1 && newData.child('start').val() === now) : (newData.child('count').val() === data.child('count').val() + 1 && newData.child('start').val() === data.child('start').val() && newData.child('count').val() <= 30))",
+        "count": { ".validate": "newData.isNumber()" },
+        "start": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
       }
     },
 
