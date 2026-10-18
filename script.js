@@ -104,7 +104,7 @@ onValue(chatRef, (snapshot) => {
 // ===== KIRIM PESAN =====
 function kirimPesan() {
   const text = input.value.trim();
-  const name = nameInput.value.trim() || "Anon";
+  const name = nameInput.value.trim() || "Bot";
   if (!text) return;
 
   push(chatRef, {
