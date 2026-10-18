@@ -48,7 +48,7 @@ const loginBtn = document.getElementById("login-btn");
 
 // ===== STATE =====
 const MAX_ANON = 30; // batas pesan untuk tamu (anonymous)
-const MAX_MESSAGES = 10; // jumlah pesan yang disimpan di database
+const MAX_MESSAGES = 999; // jumlah pesan yang disimpan di database
 
 let currentUser = null;
 let semuaPesan = [];
