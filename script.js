@@ -40,7 +40,7 @@ function renderPesan(data) {
 
   const name = document.createElement("span");
   name.classList.add("msg-name");
-  name.textContent = `${data.name} : `;
+  name.textContent = `${data.name}: `;
 
   const text = document.createElement("span");
   text.classList.add("msg-text");
