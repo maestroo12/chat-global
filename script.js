@@ -7,6 +7,14 @@ import {
   remove,
   update
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
+import {
+  getAuth,
+  signInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithPopup
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
 // ===== CONFIG =====
 const firebaseConfig = {
@@ -25,6 +33,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const chatRef = ref(db, "chat");
 const usersRef = ref(db, "users");
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 // ===== DOM =====
 const messagesDiv = document.getElementById("messages");
@@ -32,6 +42,7 @@ const input = document.getElementById("message-input");
 const nameInput = document.getElementById("user-name");
 const sendBtn = document.getElementById("send-btn");
 const onlineStatus = document.getElementById("online-status");
+const loginBtn = document.getElementById("login-btn");
 
 // ===== RENDER PESAN =====
 function renderPesan(data) {
@@ -101,10 +112,32 @@ onValue(chatRef, (snapshot) => {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
 
+// ===== LIMIT PESAN =====
+const MAX_MESSAGES = 10;
+
+function hapusPesanLama() {
+  onValue(chatRef, (snapshot) => {
+    const messages = snapshot.val();
+    if (!messages) return;
+
+    const keys = Object.keys(messages);
+    if (keys.length <= MAX_MESSAGES) return;
+
+    const sorted = keys.sort((a, b) => {
+      return messages[a].timestamp - messages[b].timestamp;
+    });
+
+    const toDelete = sorted.slice(0, keys.length - MAX_MESSAGES);
+    toDelete.forEach((key) => {
+      remove(ref(db, `chat/${key}`));
+    });
+  }, { onlyOnce: true });
+}
+
 // ===== KIRIM PESAN =====
 function kirimPesan() {
   const text = input.value.trim();
-  const name = nameInput.value.trim() || "Bot";
+  const name = nameInput.value.trim() || "Tanpa nama";
   if (!text) return;
 
   push(chatRef, {
@@ -112,6 +145,8 @@ function kirimPesan() {
     text,
     timestamp: Date.now()
   });
+
+  hapusPesanLama();
 
   input.value = "";
   input.focus();
@@ -131,21 +166,24 @@ nameInput.addEventListener("change", () => {
   localStorage.setItem("chatName", nameInput.value.trim());
 });
 
-// ===== STATUS ONLINE (REAL-TIME) =====
+// ===== AUTH + STATUS ONLINE =====
 const userId = localStorage.getItem("chatUserId") || crypto.randomUUID();
 localStorage.setItem("chatUserId", userId);
 const userRef = ref(db, `users/${userId}`);
 
-// Tandai online
-update(ref(db), {
-  [`users/${userId}`]: {
-    name: nameInput.value.trim() || "Anonymous",
-    online: true,
-    lastSeen: Date.now()
-  }
+// Default: anonymous
+signInAnonymously(auth).then(() => {
+  // Tandai online SETELAH auth berhasil
+  update(ref(db), {
+    [`users/${userId}`]: {
+      name: nameInput.value.trim() || "Anon",
+      online: true,
+      lastSeen: Date.now()
+    }
+  });
 });
 
-// Heartbeat: update lastSeen tiap 30 detik (biar nggak "mati" pas tab idle)
+// Heartbeat: update lastSeen tiap 30 detik
 const heartbeat = setInterval(() => {
   update(userRef, { lastSeen: Date.now() });
 }, 30000);
@@ -157,7 +195,6 @@ onValue(usersRef, (snapshot) => {
   if (data) {
     const now = Date.now();
     Object.values(data).forEach((user) => {
-      // Hitung yang lastSeen-nya < 60 detik lalu
       if (user.lastSeen && now - user.lastSeen < 60000) {
         count++;
       }
@@ -170,4 +207,28 @@ onValue(usersRef, (snapshot) => {
 window.addEventListener("beforeunload", () => {
   clearInterval(heartbeat);
   remove(userRef);
+});
+
+// ===== LOGIN GOOGLE =====
+if (loginBtn) {
+  loginBtn.addEventListener("click", () => {
+    const user = auth.currentUser;
+    if (user && user.isAnonymous) {
+      reauthenticateWithPopup(auth, googleProvider).then(() => {
+        user.linkWithPopup(googleProvider).then(() => {
+          console.log("Login Google berhasil!");
+        });
+      });
+    } else {
+      signInWithPopup(auth, googleProvider);
+    }
+  });
+}
+
+// Update nama pas login Google
+onAuthStateChanged(auth, (user) => {
+  if (user && !user.isAnonymous) {
+    nameInput.value = user.displayName || "Anon";
+    localStorage.setItem("chatName", nameInput.value);
+  }
 });   

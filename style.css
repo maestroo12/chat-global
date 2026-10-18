@@ -96,3 +96,23 @@ h3 {
 .msg-time {
   margin-left: auto;
 }
+
+#header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#login-btn {
+  padding: 5px 10px;
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#login-btn:hover {
+  background: #f0f0f0;
+}
