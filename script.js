@@ -78,7 +78,7 @@ olderBtn.hidden = true;
 messagesDiv.replaceChildren(olderBtn, listDiv);
 
 // ===== KONSTANTA =====
-const MAX_ANON = 50; // batas pesan tamu per 24 jam
+const MAX_ANON = 100; // batas pesan tamu per 24 jam
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RIWAYAT = 50; // jumlah pesan terbaru yang bisa dibuka
 const HALAMAN = 50; // jumlah pesan per muatan
