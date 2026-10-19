@@ -237,7 +237,7 @@ function terapkanLimit() {
     const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
     input.disabled = true;
     sendBtn.disabled = true;
-    input.placeholder = `Batas tamu habis. Coba lagi ${jam} jam lagi, atau login Google.`;
+    input.placeholder = `Limit chat lu habis. Coba tes ${jam} jam lagi, atau login Google.`;
   } else {
     input.disabled = false;
     sendBtn.disabled = false;
