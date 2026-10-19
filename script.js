@@ -49,7 +49,7 @@ const onlineStatus = document.getElementById("online-status");
 const loginBtn = document.getElementById("login-btn");
 
 // ===== STATE =====
-const MAX_ANON = 30; // batas pesan tamu per 24 jam
+const MAX_ANON = 20; // batas pesan tamu per 24 jam
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_MESSAGES = 999999999999999; // jumlah pesan yang disimpan di database
 
