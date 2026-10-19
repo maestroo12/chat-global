@@ -36,7 +36,7 @@
         },
 
         "replyTo": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && newData.val().matches(/^[a-zA-Z0-9_-]+$/) && (data.exists() || (root.child('chat').child(newData.val()).exists() && root.child('chat').child(newData.val()).child('deleted').val() !== true))"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && newData.val().matches(/^[a-zA-Z0-9_-]+$/)"
         },
 
         "file": {
@@ -179,4 +179,4 @@
       }
     }
   }
-}
+}   
