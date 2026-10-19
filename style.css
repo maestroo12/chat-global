@@ -14,6 +14,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   height: 100%;
@@ -125,230 +129,6 @@ body {
   line-height: 1.4;
 }
 
-.msg {
-  display: flex;
-  max-width: 82%;
-  align-self: flex-start;
-}
-
-.msg.me {
-  align-self: flex-end;
-}
-
-.bubble {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  column-gap: 10px;
-  padding: 7px 10px 6px;
-  background: var(--other);
-  border-radius: 14px;
-  border-top-left-radius: 4px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-
-.msg.me .bubble {
-  background: var(--me);
-  border-radius: 14px;
-  border-top-right-radius: 4px;
-}
-
-.msg-name {
-  grid-column: 1 / -1;
-  margin-bottom: 2px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--teal);
-}
-
-.msg-text {
-  grid-column: 1;
-  min-width: 0;
-  white-space: pre-wrap;
-}
-
-/* jam rata bawah di sisi kanan bubble */
-.msg-time {
-  grid-column: 2;
-  align-self: end;
-  padding-bottom: 1px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* ---------- Input ---------- */
-#input-area {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  background: #f7f8f9;
-  border-top: 1px solid var(--line);
-}
-
-#compose {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#input-area input {
-  min-width: 0;
-  font: inherit;
-  font-size: 16px; /* cegah auto-zoom di iOS */
-  color: var(--text);
-  background: #fff;
-  border: 1px solid var(--line);
-  outline: none;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-#input-area input:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
-}
-
-#user-name {
-  width: 100%;
-  padding: 7px 14px;
-  font-size: 14px !important;
-  border-radius: 999px;
-}
-
-#message-input {
-  flex: 1;
-  padding: 11px 16px;
-  border-radius: 999px;
-}
-
-#send-btn {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  color: #fff;
-  background: var(--teal);
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    transform 0.1s;
-}
-
-#send-btn:hover {
-  background: var(--teal-dark);
-}
-
-#send-btn:active {
-  transform: scale(0.94);
-}
-
-button:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-#send-btn:focus-visible {
-  outline-color: var(--teal);
-}
-
-/* ---------- HP: layar penuh ---------- */
-@media (max-width: 600px) {
-  body {
-    padding: 0;
-    align-items: stretch;
-  }
-
-  #chat-container {
-    max-width: none;
-    height: 100vh;
-    height: 100dvh;
-    max-height: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  #header {
-    padding-top: calc(12px + env(safe-area-inset-top, 0px));
-    padding-left: calc(16px + env(safe-area-inset-left, 0px));
-    padding-right: calc(16px + env(safe-area-inset-right, 0px));
-  }
-
-  .msg {
-    max-width: 88%;
-  }
-}
-
-/* HP landscape: hemat ruang vertikal */
-@media (max-height: 480px) and (orientation: landscape) {
-  #header {
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-
-  #input-area {
-    flex-direction: row;
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-
-  #user-name {
-    width: 140px;
-    flex-shrink: 0;
-  }
-
-  #compose {
-    flex: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-  }
-}
-
-/* ---------- Tambahan: akun Google ---------- */
-[hidden] {
-  display: none !important;
-}
-
-.badge {
-  display: inline-grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-  margin-left: 5px;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  color: #fff;
-  background: var(--teal);
-  border-radius: 50%;
-  vertical-align: 1px;
-}
-
-#message-input:disabled {
-  background: #eef0f2;
-  cursor: not-allowed;
-}
-
-#send-btn:disabled {
-  background: #9aa5b1;
-  cursor: not-allowed;
-}
-
-/* ---------- Riwayat, pemisah hari, pesan dihapus ---------- */
 #list {
   flex-shrink: 0;
   display: flex;
@@ -396,6 +176,36 @@ button:focus-visible {
   border-radius: 999px;
 }
 
+.msg {
+  display: flex;
+  max-width: 82%;
+  align-self: flex-start;
+}
+
+.msg.me {
+  align-self: flex-end;
+}
+
+.bubble {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: 10px;
+  padding: 7px 10px 6px;
+  background: var(--other);
+  border-radius: 14px;
+  border-top-left-radius: 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.msg.me .bubble {
+  background: var(--me);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 4px;
+}
+
 .bubble:focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
@@ -404,6 +214,111 @@ button:focus-visible {
 .bubble.deleted .msg-text {
   font-style: italic;
   color: var(--muted);
+}
+
+.msg-name {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--teal);
+}
+
+.msg-text {
+  grid-column: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+}
+
+/* jam rata bawah di sisi kanan bubble */
+.msg-time {
+  grid-column: 2;
+  align-self: end;
+  padding-bottom: 1px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: var(--teal);
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+/* ---------- Kutipan balasan di dalam bubble ---------- */
+.reply-quote {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 5px;
+  padding: 5px 8px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: rgba(15, 118, 110, 0.08);
+  border: 0;
+  border-left: 3px solid var(--teal);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.msg.me .reply-quote {
+  background: rgba(15, 118, 110, 0.14);
+}
+
+.reply-quote:hover,
+.msg.me .reply-quote:hover {
+  background: rgba(15, 118, 110, 0.22);
+}
+
+.reply-quote:focus-visible {
+  outline-color: var(--teal);
+}
+
+.reply-quote-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--teal);
+}
+
+.reply-quote-text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Sorotan saat lompat ke pesan asli */
+.msg.reply-highlight .bubble {
+  animation: reply-flash 1.6s ease-out;
+}
+
+@keyframes reply-flash {
+  0%,
+  40% {
+    background: #fff3b0;
+  }
 }
 
 /* ---------- Lampiran di dalam pesan ---------- */
@@ -431,6 +346,11 @@ button:focus-visible {
 
 .att-img.loaded {
   background: none;
+}
+
+.att-img-btn:focus-visible,
+.att-file:focus-visible {
+  outline-color: var(--teal);
 }
 
 .att-file {
@@ -485,6 +405,96 @@ button:focus-visible {
 .att-size {
   font-size: 12px;
   color: var(--muted);
+}
+
+/* ---------- Input ---------- */
+#input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #f7f8f9;
+  border-top: 1px solid var(--line);
+}
+
+#compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#input-area input {
+  min-width: 0;
+  font: inherit;
+  font-size: 16px; /* cegah auto-zoom di iOS */
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+#input-area input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+
+#input-area #user-name {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+#message-input {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 999px;
+}
+
+#message-input:disabled {
+  background: #eef0f2;
+  cursor: not-allowed;
+}
+
+#send-btn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: var(--teal);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+
+#send-btn:hover {
+  background: var(--teal-dark);
+}
+
+#send-btn:active {
+  transform: scale(0.94);
+}
+
+#send-btn:disabled {
+  background: #9aa5b1;
+  cursor: not-allowed;
+}
+
+button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+#send-btn:focus-visible {
+  outline-color: var(--teal);
 }
 
 /* ---------- Tombol lampiran & pratinjau ---------- */
@@ -568,7 +578,80 @@ button:focus-visible {
   outline-color: var(--teal);
 }
 
-/* ---------- Menu hapus ---------- */
+/* ---------- Pratinjau balasan di atas kolom pesan ---------- */
+#reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  background: #e8f5f1;
+  border: 1px solid rgba(15, 118, 110, 0.15);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+}
+
+.reply-preview-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reply-preview-label {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+#reply-preview-name {
+  display: block;
+  overflow: hidden;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#reply-preview-text {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#reply-cancel {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#reply-cancel:hover {
+  background: rgba(15, 118, 110, 0.12);
+}
+
+#reply-cancel:focus-visible {
+  outline-color: var(--teal);
+}
+
+/* ---------- Menu pesan (balas & hapus) ---------- */
 #sheet {
   position: fixed;
   inset: 0;
@@ -594,16 +677,6 @@ button:focus-visible {
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-radius: 16px 16px 0 0;
-}
-
-@media (min-width: 601px) {
-  #sheet {
-    align-items: center;
-  }
-
-  .sheet-panel {
-    border-radius: 16px;
-  }
 }
 
 .sheet-title {
@@ -682,68 +755,80 @@ button:focus-visible {
   border-radius: 6px;
 }
 
-/* ===== Pratinjau balasan di atas kolom pesan ===== */
+/* ---------- Layar lebar ---------- */
+@media (min-width: 601px) {
+  #sheet {
+    align-items: center;
+  }
 
-#reply-preview {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 9px 10px;
-  background: #e8f5f1;
-  border: 1px solid rgba(15, 118, 110, 0.15);
-  border-left: 4px solid var(--teal);
-  border-radius: 10px;
+  .sheet-panel {
+    border-radius: 16px;
+  }
 }
 
-.reply-preview-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+/* ---------- HP: layar penuh ---------- */
+@media (max-width: 600px) {
+  body {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  #chat-container {
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  #header {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  }
+
+  .msg {
+    max-width: 88%;
+  }
 }
 
-.reply-preview-label {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.4;
+/* HP landscape: hemat ruang vertikal */
+@media (max-height: 480px) and (orientation: landscape) {
+  #header {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  #input-area {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  #input-area #user-name {
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  #attach-preview,
+  #reply-preview {
+    flex: 1 1 100%;
+  }
+
+  #compose {
+    flex: 1;
+  }
 }
 
-#reply-preview-name {
-  display: block;
-  overflow: hidden;
-  color: var(--teal);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 
-#reply-preview-text {
-  display: block;
-  overflow: hidden;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#reply-cancel {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  font: inherit;
-  font-size: 24px;
-  line-height: 1;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
+  .msg.reply-highlight .bubble {
+    animation: none;
+    background: #fff3b0;
+  }
 }

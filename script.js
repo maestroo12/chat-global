@@ -13,7 +13,6 @@ import {
   orderByKey,
   limitToLast,
   startAt,
-  startAfter,
   endAt,
   endBefore,
   remove,
@@ -65,13 +64,13 @@ const sheetPreview = document.getElementById("sheet-preview");
 const sheetHapusSaya = document.getElementById("sheet-hapus-saya");
 const sheetHapusSemua = document.getElementById("sheet-hapus-semua");
 const sheetBatal = document.getElementById("sheet-batal");
+const sheetReply = document.getElementById("sheet-reply");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
 const replyPreview = document.getElementById("reply-preview");
 const replyPreviewName = document.getElementById("reply-preview-name");
 const replyPreviewText = document.getElementById("reply-preview-text");
 const replyCancel = document.getElementById("reply-cancel");
-const sheetReply = document.getElementById("sheet-reply");
 
 // Wadah daftar pesan + tombol "muat pesan lama"
 const listDiv = document.createElement("div");
@@ -103,7 +102,7 @@ let limitData = null; // { count, start } milik perangkat ini
 let serverOffset = 0;
 let sedangKirim = false;
 let lampiran = null; // file yang siap dikirim
-let replyTarget = null;
+let replyTarget = null; // key pesan yang sedang dibalas
 
 const pesan = new Map(); // key -> data pesan
 let keys = []; // urutan key (lama -> baru)
@@ -252,56 +251,52 @@ lightbox.addEventListener("click", () => {
 });
 
 // ===== BALAS PESAN =====
+// Pesan yang dikutip tapi di luar riwayat yang dimuat.
+// key -> data pesan (undefined = sedang diambil, null = tidak ada)
+const kutipanLuar = new Map();
+
+function namaPengirim(data) {
+  return data.uid === currentUser?.uid ? "Kamu" : data.name || "Pengguna";
+}
+
 function ringkasanPesan(data) {
-  if (!data) return "Pesan di luar riwayat yang dimuat.";
+  if (data === undefined) return "Memuat pesan...";
+  if (!data) return "Pesan asli tidak ditemukan.";
   if (data.deleted) return "Pesan ini telah dihapus.";
 
   if (data.text) {
     return data.text.length > 120 ? data.text.slice(0, 120) + "..." : data.text;
   }
-
   if (data.file) {
     const jenis = data.file.type?.startsWith("image/") ? "Foto" : "File";
-
     return `${jenis}: ${data.file.name}`;
   }
-
   return "Pesan tanpa teks.";
 }
 
+// Pesan hanya bisa dibalas kalau sudah dimuat, belum dihapus, dan tidak disembunyikan
+function bisaDibalas(key) {
+  const data = pesan.get(key);
+  return !!data && !data.deleted && !hiddenSet.has(key);
+}
+
 function tampilkanReplyPreview() {
+  if (replyTarget && !bisaDibalas(replyTarget)) replyTarget = null;
+
+  replyPreview.hidden = !replyTarget;
   if (!replyTarget) {
-    replyPreview.hidden = true;
     replyPreviewName.textContent = "";
     replyPreviewText.textContent = "";
     return;
   }
 
   const data = pesan.get(replyTarget);
-
-  // Batalkan jika pesan hilang, dihapus, atau disembunyikan.
-  if (!data || data.deleted || hiddenSet.has(replyTarget)) {
-    replyTarget = null;
-    replyPreview.hidden = true;
-    replyPreviewName.textContent = "";
-    replyPreviewText.textContent = "";
-    return;
-  }
-
-  replyPreviewName.textContent =
-    data.uid === currentUser?.uid ? "Kamu" : data.name || "Pengguna";
-
+  replyPreviewName.textContent = namaPengirim(data);
   replyPreviewText.textContent = ringkasanPesan(data);
-  replyPreview.hidden = false;
 }
 
 function mulaiReply(key) {
-  const data = pesan.get(key);
-
-  if (!currentUser || !data || data.deleted || hiddenSet.has(key)) {
-    return;
-  }
-
+  if (!currentUser || !bisaDibalas(key)) return;
   replyTarget = key;
   tampilkanReplyPreview();
   input.focus();
@@ -317,9 +312,30 @@ replyCancel.addEventListener("click", batalkanReply);
 sheetReply.addEventListener("click", () => {
   const key = menuTarget;
   tutupMenu();
-
   if (key) mulaiReply(key);
 });
+
+// Ambil sekali dari database untuk pesan yang dikutip tapi tidak ikut dimuat
+async function ambilKutipanLuar(key) {
+  if (kutipanLuar.has(key)) return;
+  kutipanLuar.set(key, undefined);
+
+  try {
+    const snap = await get(ref(db, `chat/${key}`));
+    kutipanLuar.set(key, snap.val());
+  } catch (err) {
+    console.error("Gagal memuat pesan kutipan:", err);
+    kutipanLuar.set(key, null);
+  }
+  perbaruiKutipanKe(key);
+}
+
+// Render ulang semua pesan yang mengutip pesan ini
+function perbaruiKutipanKe(targetKey) {
+  for (const [key, data] of pesan) {
+    if (data.replyTo === targetKey) perbaruiElemen(key);
+  }
+}
 
 let highlightTimer = null;
 let highlightedMessage = null;
@@ -330,32 +346,22 @@ function lompatKePesan(key) {
     return;
   }
 
-  const target = Array.from(listDiv.children).find(
-    (el) => el.classList.contains("msg") && el.dataset.key === key,
-  );
-
+  const target = listDiv.querySelector(`.msg[data-key="${CSS.escape(key)}"]`);
   if (!target) {
     alert("Pesan asli berada di luar riwayat yang sedang dimuat.");
     return;
   }
 
-  target.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-  });
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
 
   clearTimeout(highlightTimer);
   highlightedMessage?.classList.remove("reply-highlight");
-
   highlightedMessage = target;
   target.classList.add("reply-highlight");
 
   highlightTimer = setTimeout(() => {
     target.classList.remove("reply-highlight");
-
-    if (highlightedMessage === target) {
-      highlightedMessage = null;
-    }
+    if (highlightedMessage === target) highlightedMessage = null;
   }, 1600);
 }
 
@@ -367,22 +373,18 @@ function buatKutipanReply(targetKey) {
 
   const nama = document.createElement("span");
   nama.className = "reply-quote-name";
-
   const teks = document.createElement("span");
   teks.className = "reply-quote-text";
-
-  const target = pesan.get(targetKey);
 
   if (hiddenSet.has(targetKey)) {
     nama.textContent = "Pesan tersembunyi";
     teks.textContent = "Kamu menghapus pesan ini untuk saya.";
   } else {
-    nama.textContent = target
-      ? target.uid === currentUser?.uid
-        ? "Kamu"
-        : target.name || "Pengguna"
-      : "Pesan sebelumnya";
+    const dimuat = pesan.has(targetKey);
+    const target = dimuat ? pesan.get(targetKey) : kutipanLuar.get(targetKey);
+    if (!dimuat && !kutipanLuar.has(targetKey)) ambilKutipanLuar(targetKey);
 
+    nama.textContent = target ? namaPengirim(target) : "Pesan sebelumnya";
     teks.textContent = ringkasanPesan(target);
   }
 
@@ -392,11 +394,8 @@ function buatKutipanReply(targetKey) {
     e.stopPropagation();
     lompatKePesan(targetKey);
   });
-
-  // Jangan biarkan Enter pada kutipan membuka menu bubble.
-  btn.addEventListener("keydown", (e) => {
-    e.stopPropagation();
-  });
+  // Enter pada kutipan jangan ikut membuka menu bubble
+  btn.addEventListener("keydown", (e) => e.stopPropagation());
 
   return btn;
 }
@@ -488,10 +487,7 @@ function buatElemen(key, data) {
       : "Pesan ini telah dihapus";
     bubble.appendChild(text);
   } else {
-    if (data.replyTo) {
-      bubble.appendChild(buatKutipanReply(data.replyTo));
-    }
-
+    if (data.replyTo) bubble.appendChild(buatKutipanReply(data.replyTo));
     if (data.file) bubble.appendChild(buatLampiran(data.file));
 
     if (data.text) {
@@ -512,7 +508,7 @@ function buatElemen(key, data) {
   }
   bubble.appendChild(time);
 
-  // Ketuk pesan untuk membuka menu hapus (diabaikan kalau sedang memilih teks)
+  // Ketuk pesan untuk membuka menu (diabaikan kalau sedang memilih teks)
   bubble.addEventListener("click", () => {
     if (String(window.getSelection()).length > 0) return;
     bukaMenu(key);
@@ -553,7 +549,7 @@ function renderSemua(posisi = "bawah") {
   }
   hariTerakhir = hari;
   listDiv.replaceChildren(frag);
-  tampilkanPreview();
+  tampilkanReplyPreview();
 
   if (posisi === "jaga") {
     messagesDiv.scrollTop = messagesDiv.scrollHeight - tinggiLama + atasLama;
@@ -579,7 +575,7 @@ function tambahElemen(key) {
 
 function perbaruiElemen(key) {
   if (hiddenSet.has(key)) return;
-  const lama = listDiv.querySelector(`.msg[data-key="${key}"]`);
+  const lama = listDiv.querySelector(`.msg[data-key="${CSS.escape(key)}"]`);
   if (lama) lama.replaceWith(buatElemen(key, pesan.get(key)));
 }
 
@@ -609,18 +605,9 @@ function terimaBaru(key, data) {
 
 function pantauPerubahan(q) {
   onChildChanged(q, (snap) => {
-    const changedKey = snap.key;
-
-    pesan.set(changedKey, snap.val());
-    perbaruiElemen(changedKey);
-
-    // Perbarui semua kutipan yang mengarah ke pesan ini.
-    for (const [key, data] of pesan) {
-      if (data.replyTo === changedKey) {
-        perbaruiElemen(key);
-      }
-    }
-
+    pesan.set(snap.key, snap.val());
+    perbaruiElemen(snap.key);
+    perbaruiKutipanKe(snap.key);
     tampilkanReplyPreview();
   });
 }
@@ -658,7 +645,7 @@ function mulaiListener() {
   });
 }
 
-// ===== RIWAYAT (muat pesan lama, sampai 10.000 pesan) =====
+// ===== RIWAYAT (muat pesan lama, sampai MAX_RIWAYAT pesan) =====
 async function muatLama() {
   if (loadingOlder || !hasMore || keys.length === 0) return;
   if (keys.length >= MAX_RIWAYAT) {
@@ -713,7 +700,7 @@ messagesDiv.addEventListener("scroll", () => {
   if (messagesDiv.scrollTop < 60) muatLama();
 });
 
-// ===== HAPUS PESAN =====
+// ===== MENU PESAN (balas & hapus) =====
 function bukaMenu(key) {
   const data = pesan.get(key);
   if (!data || !currentUser) return;
@@ -735,11 +722,7 @@ function bukaMenu(key) {
   sheetHapusSemua.hidden = !(milikku && !data.deleted);
   sheet.hidden = false;
 
-  if (!sheetReply.hidden) {
-    sheetReply.focus();
-  } else {
-    sheetHapusSaya.focus();
-  }
+  (sheetReply.hidden ? sheetHapusSaya : sheetReply).focus();
 }
 
 function tutupMenu() {
@@ -1003,8 +986,7 @@ function aturTombolKirim() {
     sendBtn.disabled = sedangKirim;
     return;
   }
-  const st = statusLimit();
-  const habis = st.sisa <= 0;
+  const habis = statusLimit().sisa <= 0;
   input.disabled = habis;
   sendBtn.disabled = habis || sedangKirim;
 }
@@ -1077,15 +1059,10 @@ async function kirimPesan() {
   if (!text && !adaFile) return;
 
   const targetBalasan = replyTarget;
-
-  if (targetBalasan) {
-    const target = pesan.get(targetBalasan);
-
-    if (!target || target.deleted || hiddenSet.has(targetBalasan)) {
-      batalkanReply();
-      alert("Pesan tujuan sudah tidak tersedia. Kirim ulang pesanmu.");
-      return;
-    }
+  if (targetBalasan && !bisaDibalas(targetBalasan)) {
+    batalkanReply();
+    alert("Pesan tujuan sudah tidak tersedia. Kirim ulang pesanmu.");
+    return;
   }
 
   const google = isGoogle(currentUser);
@@ -1157,11 +1134,7 @@ async function kirimPesan() {
 
     input.value = "";
     lampiran = null;
-
-    if (replyTarget === targetBalasan) {
-      batalkanReply();
-    }
-
+    if (replyTarget === targetBalasan) batalkanReply();
     tampilkanPreview();
     input.focus();
   } catch (err) {
