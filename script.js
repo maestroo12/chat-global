@@ -17,7 +17,7 @@ import {
   endAt,
   endBefore,
   remove,
-  update
+  update,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 import {
   getAuth,
@@ -25,19 +25,20 @@ import {
   signInWithPopup,
   signOut,
   GoogleAuthProvider,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
 // ===== CONFIG =====
 const firebaseConfig = {
   apiKey: "AIzaSyDQYSoIuyWfHJYCMU8B0HAKFOkshiGCrXw",
   authDomain: "chat-globall.firebaseapp.com",
-  databaseURL: "https://chat-globall-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL:
+    "https://chat-globall-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "chat-globall",
   storageBucket: "chat-globall.firebasestorage.app",
   messagingSenderId: "681085064123",
   appId: "1:681085064123:web:45edafbf44945ef5762a9e",
-  measurementId: "G-KES6SEN37K"
+  measurementId: "G-KES6SEN37K",
 };
 
 // ===== INIT =====
@@ -110,9 +111,15 @@ const isGoogle = (user) => !!user && !user.isAnonymous;
 
 // Nama akun Google. Kalau profil tidak punya nama, pakai bagian depan email.
 function namaGoogle(user) {
-  const dariProvider = user.providerData?.find((p) => p.displayName)?.displayName;
-  const email = user.email || user.providerData?.find((p) => p.email)?.email || "";
-  return (user.displayName || dariProvider || email.split("@")[0] || "").slice(0, 40);
+  const dariProvider = user.providerData?.find(
+    (p) => p.displayName,
+  )?.displayName;
+  const email =
+    user.email || user.providerData?.find((p) => p.email)?.email || "";
+  return (user.displayName || dariProvider || email.split("@")[0] || "").slice(
+    0,
+    40,
+  );
 }
 
 input.maxLength = MAX_TEKS;
@@ -151,11 +158,20 @@ function labelHari(ts) {
   const kemarin = new Date();
   kemarin.setDate(kemarin.getDate() - 1);
   if (sama(d, kemarin)) return "Kemarin";
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function dekatBawah() {
-  return messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 160;
+  return (
+    messagesDiv.scrollHeight -
+      messagesDiv.scrollTop -
+      messagesDiv.clientHeight <
+    160
+  );
 }
 
 function scrollBawah() {
@@ -182,7 +198,7 @@ const io = new IntersectionObserver(
       muatGambar(en.target);
     });
   },
-  { root: messagesDiv, rootMargin: "300px" }
+  { root: messagesDiv, rootMargin: "300px" },
 );
 
 async function muatGambar(img) {
@@ -255,7 +271,9 @@ function buatLampiran(f) {
 
   const ext = document.createElement("span");
   ext.className = "att-ext";
-  ext.textContent = (f.name.includes(".") ? f.name.split(".").pop() : "file").slice(0, 4).toUpperCase();
+  ext.textContent = (f.name.includes(".") ? f.name.split(".").pop() : "file")
+    .slice(0, 4)
+    .toUpperCase();
 
   const info = document.createElement("span");
   info.className = "att-info";
@@ -309,7 +327,9 @@ function buatElemen(key, data) {
   if (data.deleted) {
     const text = document.createElement("span");
     text.classList.add("msg-text");
-    text.textContent = isMe ? "Kamu menghapus pesan ini" : "Pesan ini telah dihapus";
+    text.textContent = isMe
+      ? "Kamu menghapus pesan ini"
+      : "Pesan ini telah dihapus";
     bubble.appendChild(text);
   } else {
     if (data.file) bubble.appendChild(buatLampiran(data.file));
@@ -326,7 +346,7 @@ function buatElemen(key, data) {
   if (data.timestamp) {
     time.textContent = new Date(data.timestamp).toLocaleTimeString("id-ID", {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   }
   bubble.appendChild(time);
@@ -437,8 +457,10 @@ function mulaiListener() {
   listenerAktif = true;
 
   const liveQ = query(chatRef, orderByKey(), limitToLast(HALAMAN));
-  onChildAdded(liveQ, (snap) => terimaBaru(snap.key, snap.val()), (err) =>
-    console.error("Gagal membaca chat:", err)
+  onChildAdded(
+    liveQ,
+    (snap) => terimaBaru(snap.key, snap.val()),
+    (err) => console.error("Gagal membaca chat:", err),
   );
   pantauPerubahan(liveQ);
   get(liveQ)
@@ -478,7 +500,7 @@ async function muatLama() {
   try {
     const batas = Math.min(HALAMAN, MAX_RIWAYAT - keys.length);
     const snap = await get(
-      query(chatRef, orderByKey(), endBefore(keys[0]), limitToLast(batas))
+      query(chatRef, orderByKey(), endBefore(keys[0]), limitToLast(batas)),
     );
 
     const baru = [];
@@ -486,7 +508,8 @@ async function muatLama() {
       baru.push([c.key, c.val()]);
     });
 
-    if (baru.length < batas || keys.length + baru.length >= MAX_RIWAYAT) hasMore = false;
+    if (baru.length < batas || keys.length + baru.length >= MAX_RIWAYAT)
+      hasMore = false;
 
     if (baru.length) {
       baru.forEach(([k, v]) => pesan.set(k, v));
@@ -494,7 +517,12 @@ async function muatLama() {
       keys = [...kunciBaru, ...keys];
       // agar pesan lama yang dihapus pengirimnya ikut berubah secara langsung
       pantauPerubahan(
-        query(chatRef, orderByKey(), startAt(kunciBaru[0]), endAt(kunciBaru[kunciBaru.length - 1]))
+        query(
+          chatRef,
+          orderByKey(),
+          startAt(kunciBaru[0]),
+          endAt(kunciBaru[kunciBaru.length - 1]),
+        ),
       );
       renderSemua("jaga");
     }
@@ -567,7 +595,7 @@ sheetHapusSemua.addEventListener("click", async () => {
   const updates = {
     [`chat/${key}/deleted`]: true,
     [`chat/${key}/text`]: null,
-    [`chat/${key}/file`]: null
+    [`chat/${key}/file`]: null,
   };
   if (data.file?.id) {
     updates[`files/${data.file.id}`] = null;
@@ -596,7 +624,7 @@ function pantauHidden(user) {
       hiddenSet = new Set(Object.keys(snap.val() || {}));
       renderSemua("jaga");
     },
-    (err) => console.error("Gagal membaca daftar pesan tersembunyi:", err)
+    (err) => console.error("Gagal membaca daftar pesan tersembunyi:", err),
   );
 }
 
@@ -655,7 +683,9 @@ async function kompresGambar(file) {
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(bmp, 0, 0, w, h);
 
-    blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", kualitas));
+    blob = await new Promise((res) =>
+      canvas.toBlob(res, "image/jpeg", kualitas),
+    );
     if (blob && blob.size <= MAX_IMG_BYTES) break;
 
     if (kualitas > 0.55) kualitas -= 0.1;
@@ -663,7 +693,8 @@ async function kompresGambar(file) {
   }
 
   if (bmp.close) bmp.close();
-  if (!blob || blob.size > MAX_IMG_BYTES) throw new Error("Gambar terlalu besar untuk dikirim.");
+  if (!blob || blob.size > MAX_IMG_BYTES)
+    throw new Error("Gambar terlalu besar untuk dikirim.");
 
   return {
     dataUrl: await bacaDataUrl(blob),
@@ -671,7 +702,7 @@ async function kompresGambar(file) {
     type: "image/jpeg",
     size: blob.size,
     w,
-    h
+    h,
   };
 }
 
@@ -680,14 +711,14 @@ async function siapkanLampiran(file) {
 
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(
-      `File terlalu besar (${formatUkuran(file.size)}). Maksimal ${formatUkuran(MAX_FILE_BYTES)}.`
+      `File terlalu besar (${formatUkuran(file.size)}). Maksimal ${formatUkuran(MAX_FILE_BYTES)}.`,
     );
   }
   return {
     dataUrl: await bacaDataUrl(file),
     name: file.name,
     type: file.type || "application/octet-stream",
-    size: file.size
+    size: file.size,
   };
 }
 
@@ -783,7 +814,7 @@ function statusLimit() {
   }
   return {
     sisa: MAX_ANON - limitData.count,
-    bukaLagi: limitData.start + DAY_MS - now
+    bukaLagi: limitData.start + DAY_MS - now,
   };
 }
 
@@ -873,7 +904,9 @@ async function kirimPesan() {
     : nameInput.value.trim() || "Orang Asing";
 
   if (!name) {
-    alert("Akun Google ini tidak punya nama, jadi tidak bisa dipakai untuk chat.");
+    alert(
+      "Akun Google ini tidak punya nama, jadi tidak bisa dipakai untuk chat.",
+    );
     return;
   }
 
@@ -886,7 +919,11 @@ async function kirimPesan() {
 
     // Maksimal 2 percobaan: kalau limit berubah di tab lain, hitung ulang lalu coba lagi
     for (let percobaan = 0; percobaan < 2 && !berhasil; percobaan++) {
-      const data = { name, uid, timestamp: Math.round(Date.now() + serverOffset) };
+      const data = {
+        name,
+        uid,
+        timestamp: Math.round(Date.now() + serverOffset),
+      };
       if (text) data.text = text;
       const updates = { [`chat/${key}`]: data };
 
@@ -899,9 +936,14 @@ async function kirimPesan() {
             name: lampiran.name,
             type: lampiran.type,
             size: lampiran.size,
-            data: lampiran.dataUrl
+            data: lampiran.dataUrl,
           };
-          data.file = { id: fid, name: lampiran.name, type: lampiran.type, size: lampiran.size };
+          data.file = {
+            id: fid,
+            name: lampiran.name,
+            type: lampiran.type,
+            size: lampiran.size,
+          };
           if (lampiran.w) {
             data.file.w = lampiran.w;
             data.file.h = lampiran.h;
@@ -915,7 +957,8 @@ async function kirimPesan() {
         await update(ref(db), updates);
         berhasil = true;
       } catch (err) {
-        if (percobaan === 1 || google || err.code !== "PERMISSION_DENIED") throw err;
+        if (percobaan === 1 || google || err.code !== "PERMISSION_DENIED")
+          throw err;
       }
     }
 
@@ -986,7 +1029,8 @@ onAuthStateChanged(auth, (user) => {
   if (!user) {
     signInAnonymously(auth).catch((err) => {
       console.error("Anonymous gagal:", err);
-      input.placeholder = "Gagal masuk sebagai Orang Asing: " + (err.code || err.message);
+      input.placeholder =
+        "Gagal masuk sebagai Orang Asing: " + (err.code || err.message);
     });
     return;
   }
