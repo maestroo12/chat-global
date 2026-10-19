@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0f766e" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=3" />
     <title>Global Chat Jordan</title>
   </head>
 
@@ -31,7 +31,28 @@
           autocomplete="nickname"
           maxlength="24"
         />
+
+        <div id="attach-preview" hidden></div>
+
         <div id="compose">
+          <button
+            id="attach-btn"
+            type="button"
+            aria-label="Lampirkan foto atau file"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"
+              />
+            </svg>
+          </button>
+          <input type="file" id="file-input" hidden />
           <input
             type="text"
             id="message-input"
@@ -51,6 +72,39 @@
       </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <!-- Menu hapus pesan -->
+    <div id="sheet" hidden>
+      <div class="sheet-backdrop" data-tutup></div>
+      <div
+        class="sheet-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sheet-title"
+      >
+        <p id="sheet-title" class="sheet-title">Opsi pesan</p>
+        <p id="sheet-preview" class="sheet-preview"></p>
+        <button id="sheet-hapus-saya" type="button">
+          <span>Hapus untuk saya</span>
+          <small
+            >Hanya hilang dari layarmu. Orang lain masih bisa melihatnya.</small
+          >
+        </button>
+        <button id="sheet-hapus-semua" type="button" class="danger">
+          <span>Hapus untuk semua orang</span>
+          <small
+            >Isi pesan dihapus, yang tersisa hanya keterangan "Pesan ini telah
+            dihapus".</small
+          >
+        </button>
+        <button id="sheet-batal" type="button" class="plain">Batal</button>
+      </div>
+    </div>
+
+    <!-- Tampilan gambar penuh -->
+    <div id="lightbox" hidden>
+      <img id="lightbox-img" alt="" />
+    </div>
+
+    <script type="module" src="script.js?v=3"></script>
   </body>
 </html>

@@ -346,3 +346,341 @@ button:focus-visible {
   background: #9aa5b1;
   cursor: not-allowed;
 }
+
+/* ---------- Riwayat, pemisah hari, pesan dihapus ---------- */
+#list {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#older-btn {
+  flex-shrink: 0;
+  align-self: center;
+  margin-bottom: 6px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--teal);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#older-btn:hover:not(:disabled) {
+  background: #e6f4f2;
+}
+
+#older-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+#older-btn:focus-visible {
+  outline-color: var(--teal);
+}
+
+.day-sep {
+  align-self: center;
+  margin: 10px 0 6px;
+}
+
+.day-sep span {
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+}
+
+.bubble {
+  cursor: pointer;
+}
+
+.bubble:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.bubble.deleted .msg-text {
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* ---------- Lampiran di dalam pesan ---------- */
+.att-img-btn {
+  grid-column: 1 / -1;
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.att-img {
+  display: block;
+  width: min(260px, 100%);
+  min-height: 100px;
+  max-height: 340px;
+  object-fit: cover;
+  background: #e3e7ea;
+  border-radius: 10px;
+}
+
+.att-img.loaded {
+  background: none;
+}
+
+.att-file {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 200px;
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.att-file:hover {
+  background: rgba(15, 118, 110, 0.14);
+}
+
+.att-ext {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--teal);
+  border-radius: 8px;
+}
+
+.att-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.att-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-size {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Tombol lampiran & pratinjau ---------- */
+#attach-btn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--teal);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#attach-btn:hover {
+  background: #e6f4f2;
+}
+
+#attach-btn:focus-visible {
+  outline-color: var(--teal);
+}
+
+#attach-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 10px;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+#attach-preview img {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.ap-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ap-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ap-size {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ap-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ap-close:hover {
+  background: #eef0f2;
+}
+
+.ap-close:focus-visible {
+  outline-color: var(--teal);
+}
+
+/* ---------- Menu hapus ---------- */
+#sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 30, 45, 0.45);
+}
+
+.sheet-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+}
+
+@media (min-width: 601px) {
+  #sheet {
+    align-items: center;
+  }
+
+  .sheet-panel {
+    border-radius: 16px;
+  }
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sheet-preview {
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: var(--chat-bg);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.sheet-preview:empty {
+  display: none;
+}
+
+.sheet-panel button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  text-align: left;
+  background: #f3f5f6;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.sheet-panel button:hover {
+  background: #e9edef;
+}
+
+.sheet-panel button small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sheet-panel button.danger {
+  color: #b42318;
+}
+
+.sheet-panel button.plain {
+  align-items: center;
+  background: none;
+}
+
+.sheet-panel button:focus-visible {
+  outline-color: var(--teal);
+}
+
+/* ---------- Gambar penuh ---------- */
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.88);
+  cursor: zoom-out;
+}
+
+#lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
