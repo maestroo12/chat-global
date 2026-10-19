@@ -34,6 +34,18 @@
 
         <div id="attach-preview" hidden></div>
 
+        <div id="reply-preview" hidden>
+          <div class="reply-preview-content">
+            <span class="reply-preview-label">Membalas pesan</span>
+            <strong id="reply-preview-name"></strong>
+            <span id="reply-preview-text"></span>
+          </div>
+
+          <button id="reply-cancel" type="button" aria-label="Batalkan balasan">
+            ×
+          </button>
+        </div>
+
         <div id="compose">
           <button
             id="attach-btn"
@@ -83,6 +95,10 @@
       >
         <p id="sheet-title" class="sheet-title">Opsi pesan</p>
         <p id="sheet-preview" class="sheet-preview"></p>
+        <button id="sheet-reply" type="button">
+          <span>Balas pesan</span>
+          <small>Tulis balasan untuk pesan ini.</small>
+        </button>
         <button id="sheet-hapus-saya" type="button">
           <span>Hapus untuk saya</span>
           <small

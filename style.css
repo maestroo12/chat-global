@@ -146,6 +146,7 @@ body {
   border-top-left-radius: 4px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
   overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
 .msg.me .bubble {
@@ -393,10 +394,6 @@ button:focus-visible {
   color: var(--muted);
   background: rgba(255, 255, 255, 0.8);
   border-radius: 999px;
-}
-
-.bubble {
-  cursor: pointer;
 }
 
 .bubble:focus-visible {
@@ -683,4 +680,70 @@ button:focus-visible {
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
+}
+
+/* ===== Pratinjau balasan di atas kolom pesan ===== */
+
+#reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  background: #e8f5f1;
+  border: 1px solid rgba(15, 118, 110, 0.15);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+}
+
+.reply-preview-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reply-preview-label {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+#reply-preview-name {
+  display: block;
+  overflow: hidden;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#reply-preview-text {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#reply-cancel {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
 }

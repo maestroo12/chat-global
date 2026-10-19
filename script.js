@@ -67,6 +67,11 @@ const sheetHapusSemua = document.getElementById("sheet-hapus-semua");
 const sheetBatal = document.getElementById("sheet-batal");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
+const replyPreview = document.getElementById("reply-preview");
+const replyPreviewName = document.getElementById("reply-preview-name");
+const replyPreviewText = document.getElementById("reply-preview-text");
+const replyCancel = document.getElementById("reply-cancel");
+const sheetReply = document.getElementById("sheet-reply");
 
 // Wadah daftar pesan + tombol "muat pesan lama"
 const listDiv = document.createElement("div");
@@ -79,9 +84,9 @@ olderBtn.hidden = true;
 messagesDiv.replaceChildren(olderBtn, listDiv);
 
 // ===== KONSTANTA =====
-const MAX_ANON = 100; // batas pesan tamu per 24 jam
+const MAX_ANON = 30; // batas pesan tamu per 24 jam
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_RIWAYAT = 50; // jumlah pesan terbaru yang bisa dibuka
+const MAX_RIWAYAT = 100; // jumlah pesan terbaru yang bisa dibuka
 const HALAMAN = 50; // jumlah pesan per muatan
 const MAX_TEKS = 500;
 const MAX_IMG_BYTES = 350 * 1024; // foto dikecilkan otomatis sampai di bawah ini
@@ -98,6 +103,7 @@ let limitData = null; // { count, start } milik perangkat ini
 let serverOffset = 0;
 let sedangKirim = false;
 let lampiran = null; // file yang siap dikirim
+let replyTarget = null;
 
 const pesan = new Map(); // key -> data pesan
 let keys = []; // urutan key (lama -> baru)
@@ -245,6 +251,156 @@ lightbox.addEventListener("click", () => {
   lightboxImg.removeAttribute("src");
 });
 
+// ===== BALAS PESAN =====
+function ringkasanPesan(data) {
+  if (!data) return "Pesan di luar riwayat yang dimuat.";
+  if (data.deleted) return "Pesan ini telah dihapus.";
+
+  if (data.text) {
+    return data.text.length > 120 ? data.text.slice(0, 120) + "..." : data.text;
+  }
+
+  if (data.file) {
+    const jenis = data.file.type?.startsWith("image/") ? "Foto" : "File";
+
+    return `${jenis}: ${data.file.name}`;
+  }
+
+  return "Pesan tanpa teks.";
+}
+
+function tampilkanReplyPreview() {
+  if (!replyTarget) {
+    replyPreview.hidden = true;
+    replyPreviewName.textContent = "";
+    replyPreviewText.textContent = "";
+    return;
+  }
+
+  const data = pesan.get(replyTarget);
+
+  // Batalkan jika pesan hilang, dihapus, atau disembunyikan.
+  if (!data || data.deleted || hiddenSet.has(replyTarget)) {
+    replyTarget = null;
+    replyPreview.hidden = true;
+    replyPreviewName.textContent = "";
+    replyPreviewText.textContent = "";
+    return;
+  }
+
+  replyPreviewName.textContent =
+    data.uid === currentUser?.uid ? "Kamu" : data.name || "Pengguna";
+
+  replyPreviewText.textContent = ringkasanPesan(data);
+  replyPreview.hidden = false;
+}
+
+function mulaiReply(key) {
+  const data = pesan.get(key);
+
+  if (!currentUser || !data || data.deleted || hiddenSet.has(key)) {
+    return;
+  }
+
+  replyTarget = key;
+  tampilkanReplyPreview();
+  input.focus();
+}
+
+function batalkanReply() {
+  replyTarget = null;
+  tampilkanReplyPreview();
+}
+
+replyCancel.addEventListener("click", batalkanReply);
+
+sheetReply.addEventListener("click", () => {
+  const key = menuTarget;
+  tutupMenu();
+
+  if (key) mulaiReply(key);
+});
+
+let highlightTimer = null;
+let highlightedMessage = null;
+
+function lompatKePesan(key) {
+  if (hiddenSet.has(key)) {
+    alert("Pesan ini sudah kamu hapus untuk saya.");
+    return;
+  }
+
+  const target = Array.from(listDiv.children).find(
+    (el) => el.classList.contains("msg") && el.dataset.key === key,
+  );
+
+  if (!target) {
+    alert("Pesan asli berada di luar riwayat yang sedang dimuat.");
+    return;
+  }
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+
+  clearTimeout(highlightTimer);
+  highlightedMessage?.classList.remove("reply-highlight");
+
+  highlightedMessage = target;
+  target.classList.add("reply-highlight");
+
+  highlightTimer = setTimeout(() => {
+    target.classList.remove("reply-highlight");
+
+    if (highlightedMessage === target) {
+      highlightedMessage = null;
+    }
+  }, 1600);
+}
+
+function buatKutipanReply(targetKey) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "reply-quote";
+  btn.setAttribute("aria-label", "Lihat pesan asli");
+
+  const nama = document.createElement("span");
+  nama.className = "reply-quote-name";
+
+  const teks = document.createElement("span");
+  teks.className = "reply-quote-text";
+
+  const target = pesan.get(targetKey);
+
+  if (hiddenSet.has(targetKey)) {
+    nama.textContent = "Pesan tersembunyi";
+    teks.textContent = "Kamu menghapus pesan ini untuk saya.";
+  } else {
+    nama.textContent = target
+      ? target.uid === currentUser?.uid
+        ? "Kamu"
+        : target.name || "Pengguna"
+      : "Pesan sebelumnya";
+
+    teks.textContent = ringkasanPesan(target);
+  }
+
+  btn.append(nama, teks);
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    lompatKePesan(targetKey);
+  });
+
+  // Jangan biarkan Enter pada kutipan membuka menu bubble.
+  btn.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+  });
+
+  return btn;
+}
+
 // ===== RENDER PESAN =====
 function buatLampiran(f) {
   if (f.type && f.type.startsWith("image/")) {
@@ -332,7 +488,12 @@ function buatElemen(key, data) {
       : "Pesan ini telah dihapus";
     bubble.appendChild(text);
   } else {
+    if (data.replyTo) {
+      bubble.appendChild(buatKutipanReply(data.replyTo));
+    }
+
     if (data.file) bubble.appendChild(buatLampiran(data.file));
+
     if (data.text) {
       const text = document.createElement("span");
       text.classList.add("msg-text");
@@ -392,6 +553,7 @@ function renderSemua(posisi = "bawah") {
   }
   hariTerakhir = hari;
   listDiv.replaceChildren(frag);
+  tampilkanPreview();
 
   if (posisi === "jaga") {
     messagesDiv.scrollTop = messagesDiv.scrollHeight - tinggiLama + atasLama;
@@ -447,8 +609,19 @@ function terimaBaru(key, data) {
 
 function pantauPerubahan(q) {
   onChildChanged(q, (snap) => {
-    pesan.set(snap.key, snap.val());
-    perbaruiElemen(snap.key);
+    const changedKey = snap.key;
+
+    pesan.set(changedKey, snap.val());
+    perbaruiElemen(changedKey);
+
+    // Perbarui semua kutipan yang mengarah ke pesan ini.
+    for (const [key, data] of pesan) {
+      if (data.replyTo === changedKey) {
+        perbaruiElemen(key);
+      }
+    }
+
+    tampilkanReplyPreview();
   });
 }
 
@@ -558,9 +731,15 @@ function bukaMenu(key) {
         ? "Lampiran: " + data.file.name
         : "";
 
+  sheetReply.hidden = !!data.deleted;
   sheetHapusSemua.hidden = !(milikku && !data.deleted);
   sheet.hidden = false;
-  sheetHapusSaya.focus();
+
+  if (!sheetReply.hidden) {
+    sheetReply.focus();
+  } else {
+    sheetHapusSaya.focus();
+  }
 }
 
 function tutupMenu() {
@@ -897,6 +1076,18 @@ async function kirimPesan() {
   const adaFile = !!lampiran && isGoogle(currentUser);
   if (!text && !adaFile) return;
 
+  const targetBalasan = replyTarget;
+
+  if (targetBalasan) {
+    const target = pesan.get(targetBalasan);
+
+    if (!target || target.deleted || hiddenSet.has(targetBalasan)) {
+      batalkanReply();
+      alert("Pesan tujuan sudah tidak tersedia. Kirim ulang pesanmu.");
+      return;
+    }
+  }
+
   const google = isGoogle(currentUser);
   const uid = currentUser.uid;
   const name = google
@@ -925,6 +1116,8 @@ async function kirimPesan() {
         timestamp: Math.round(Date.now() + serverOffset),
       };
       if (text) data.text = text;
+      if (targetBalasan) data.replyTo = targetBalasan;
+
       const updates = { [`chat/${key}`]: data };
 
       if (google) {
@@ -964,6 +1157,11 @@ async function kirimPesan() {
 
     input.value = "";
     lampiran = null;
+
+    if (replyTarget === targetBalasan) {
+      batalkanReply();
+    }
+
     tampilkanPreview();
     input.focus();
   } catch (err) {
@@ -1036,6 +1234,8 @@ onAuthStateChanged(auth, (user) => {
   }
 
   currentUser = user;
+  batalkanReply();
+
   const google = isGoogle(user);
 
   // Akun Google: nama otomatis dari Google, kolom nama disembunyikan, bisa kirim file
