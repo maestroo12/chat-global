@@ -5,12 +5,22 @@ import {
   remove,
   update,
   onValue,
+  query,
+  orderByKey,
+  limitToFirst,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
 const ONLINE_MS = 60000;
 
-export function initAdmin({ db, onDiblokir }) {
+export function initAdmin({
+  db,
+  onDiblokir,
+  onAdminBerubah,
+  onNamaAdmin,
+  onNamaDaftarBerubah,
+  namaDefault,
+}) {
   const btn = document.getElementById("admin-btn");
   const panel = document.getElementById("admin-panel");
   const closeBtn = document.getElementById("admin-close");
@@ -18,13 +28,36 @@ export function initAdmin({ db, onDiblokir }) {
   const bannedList = document.getElementById("admin-banned");
   const onlineCount = document.getElementById("admin-online-count");
   const bannedCount = document.getElementById("admin-banned-count");
+  const nameForm = document.getElementById("admin-name-form");
+  const nameField = document.getElementById("admin-name-input");
+  const nameHint = document.getElementById("admin-name-hint");
+  const purgeForm = document.getElementById("admin-purge-form");
+  const purgeField = document.getElementById("admin-purge-input");
+  const purgeHint = document.getElementById("admin-purge-hint");
+  const MAX_HAPUS = 500;
 
   let user = null;
-  let aktif = false;
-  let stops = [];
+  let aktif = false; // akun yang sedang login adalah admin
+  let stops = []; // pemantau milik sesi login (blokir diri sendiri, daftar admin)
+  let stopsAdmin = []; // pemantau khusus admin (daftar blokir, daftar user)
   let timer = null;
   let usersData = {};
   let bannedData = {};
+
+  // Daftar admin bersifat publik (boleh dibaca semua akun yang login), jadi dipakai
+  // semua orang untuk menentukan label "Admin" di chat. Sengaja TIDAK dikosongkan
+  // saat ganti akun, supaya label tidak berkedip.
+  // Nama tampilan admin (bukan nama Google). Disimpan di adminNames/{uid}.
+  let namaKustom = null;
+  let namaSiap = false;
+
+  // Nama tampilan semua admin (uid -> nama). Publik, dipakai untuk menampilkan nama
+  // admin di SEMUA pesan mereka (termasuk riwayat lama), jadi ganti nama berlaku
+  // surut tanpa mengubah isi pesan. Seperti adminSet, tidak dikosongkan saat ganti akun.
+  let namaMap = {};
+
+  let adminSet = new Set();
+  let adminSiap = false; // daftar admin sudah pernah berhasil dibaca
 
   // ===== Elemen kecil =====
   function buatTombol(label, danger, fn) {
@@ -181,13 +214,115 @@ export function initAdmin({ db, onDiblokir }) {
     }
   }
 
+  // ===== Nama tampilan admin =====
+  async function simpanNama(e) {
+    e.preventDefault();
+    if (!aktif || !user) return;
+    const nama = nameField.value.trim().slice(0, 24);
+    const r = ref(db, `adminNames/${user.uid}`);
+    try {
+      if (nama) await set(r, nama);
+      else await remove(r);
+      nameHint.textContent = nama
+        ? "Tersimpan. Pesan barumu memakai nama ini."
+        : "Kembali memakai nama Google.";
+    } catch (err) {
+      alert("Gagal menyimpan nama: " + (err.code || err.message));
+    }
+  }
+
+  nameForm.addEventListener("submit", simpanNama);
+
+  // ===== Hapus riwayat chat (N pesan terlama) =====
+  let sedangHapus = false;
+
+  async function hapusTerlama(e) {
+    e.preventDefault();
+    if (!aktif || sedangHapus) return;
+
+    const n = Math.floor(Number(purgeField.value));
+    if (!(n >= 1)) {
+      purgeHint.textContent = "Isi jumlah pesan yang mau dihapus (minimal 1).";
+      return;
+    }
+    if (n > MAX_HAPUS) {
+      purgeHint.textContent = `Maksimal ${MAX_HAPUS} pesan sekali hapus. Ulangi kalau perlu lebih.`;
+      return;
+    }
+    if (
+      !confirm(
+        `Hapus ${n} pesan terlama secara permanen (termasuk foto/file-nya)? Tidak bisa dibatalkan.`,
+      )
+    )
+      return;
+
+    sedangHapus = true;
+    purgeForm.querySelector("button").disabled = true;
+    purgeHint.textContent = "Menghapus...";
+
+    try {
+      const snap = await get(
+        query(ref(db, "chat"), orderByKey(), limitToFirst(n)),
+      );
+
+      const updates = {};
+      let terakhir = null;
+      let jumlah = 0;
+      snap.forEach((c) => {
+        updates[`chat/${c.key}`] = null;
+        const fid = c.val()?.file?.id;
+        if (fid) updates[`files/${fid}`] = null;
+        terakhir = c.key;
+        jumlah++;
+      });
+
+      if (!jumlah) {
+        purgeHint.textContent = "Tidak ada pesan untuk dihapus.";
+        return;
+      }
+
+      // Sinyal ke semua pengguna yang sedang membuka chat: buang pesan sampai key ini
+      updates["purge"] = { upTo: terakhir, at: serverTimestamp() };
+      await update(ref(db), updates);
+
+      purgeField.value = "";
+      purgeHint.textContent = `${jumlah} pesan terlama sudah dihapus.`;
+    } catch (err) {
+      purgeHint.textContent = "Gagal menghapus: " + (err.code || err.message);
+    } finally {
+      sedangHapus = false;
+      purgeForm.querySelector("button").disabled = false;
+    }
+  }
+
+  purgeForm.addEventListener("submit", hapusTerlama);
+
+  // Dipanggil sebelum kirim pesan: pastikan nama sudah terbaca, supaya pesan pertama
+  // setelah login tidak sempat memakai nama Google.
+  async function pastikanNama() {
+    if (!aktif || namaSiap || !user) return;
+    const uid = user.uid;
+    try {
+      const snap = await get(ref(db, `adminNames/${uid}`));
+      if (user?.uid === uid) namaKustom = snap.val() || null;
+    } catch (err) {
+      console.warn("Gagal membaca nama admin:", err.code || err.message);
+    }
+  }
+
   // ===== Panel =====
   function tutup() {
     panel.hidden = true;
   }
 
+  function isiFormNama() {
+    nameField.value = namaKustom || "";
+    nameField.placeholder = (user && namaDefault && namaDefault(user)) || "Nama";
+  }
+
   btn.addEventListener("click", () => {
     render();
+    isiFormNama();
     panel.hidden = false;
     closeBtn.focus();
   });
@@ -203,15 +338,82 @@ export function initAdmin({ db, onDiblokir }) {
   });
 
   // ===== Siklus akun =====
-  function bersihkan() {
-    stops.forEach((f) => f());
-    stops = [];
+  function matikanAdmin() {
+    stopsAdmin.forEach((f) => f());
+    stopsAdmin = [];
     clearInterval(timer);
     usersData = {};
     bannedData = {};
+    namaKustom = null;
+    namaSiap = false;
     aktif = false;
     btn.hidden = true;
     tutup();
+  }
+
+  function aktifkanAdmin() {
+    aktif = true;
+    btn.hidden = false;
+
+    const uid = user.uid;
+    stopsAdmin.push(
+      onValue(
+        ref(db, `adminNames/${uid}`),
+        (s) => {
+          namaKustom = s.val() || null;
+          namaSiap = true;
+          if (!panel.hidden && document.activeElement !== nameField) isiFormNama();
+          if (onNamaAdmin) onNamaAdmin();
+        },
+        (err) => {
+          namaSiap = true; // tetap pakai nama Google kalau tidak bisa dibaca
+          console.warn("Gagal membaca nama admin:", err.code || err.message);
+        },
+      ),
+      onValue(
+        ref(db, "banned"),
+        (s) => {
+          bannedData = s.val() || {};
+          if (!panel.hidden) render();
+        },
+        (err) => console.error("Gagal membaca daftar blokir:", err),
+      ),
+      onValue(
+        ref(db, "users"),
+        (s) => {
+          usersData = s.val() || {};
+          if (!panel.hidden) render();
+        },
+        (err) => console.error("Gagal membaca daftar user:", err),
+      ),
+    );
+    timer = setInterval(() => {
+      if (!panel.hidden) renderOnline();
+    }, 15000);
+  }
+
+  function bersihkan() {
+    stops.forEach((f) => f());
+    stops = [];
+    matikanAdmin();
+  }
+
+  // Satu-satunya tempat yang menentukan siapa admin: dipanggil tiap daftar admin berubah.
+  function terapkanDaftarAdmin(val) {
+    const baru = new Set(Object.keys(val).filter((k) => val[k] === true));
+    const berubah =
+      !adminSiap ||
+      baru.size !== adminSet.size ||
+      [...baru].some((k) => !adminSet.has(k));
+
+    adminSet = baru;
+    adminSiap = true;
+
+    const harusAktif = !!user && !user.isAnonymous && baru.has(user.uid);
+    if (harusAktif && !aktif) aktifkanAdmin();
+    else if (!harusAktif && aktif) matikanAdmin();
+
+    if (berubah && onAdminBerubah) onAdminBerubah();
   }
 
   function setUser(u) {
@@ -229,64 +431,46 @@ export function initAdmin({ db, onDiblokir }) {
       ),
     );
 
-    // Apakah akun ini admin? (daftar admin diisi manual lewat Firebase Console)
-    get(ref(db, `admins/${u.uid}`))
-      .then((snap) => {
-        if (user?.uid !== u.uid || snap.val() !== true) return;
-        aktif = true;
-        btn.hidden = false;
+    // Daftar admin diisi manual lewat Firebase Console. Dipantau terus (realtime)
+    // oleh semua akun, bukan hanya admin.
+    stops.push(
+      onValue(
+        ref(db, "admins"),
+        (snap) => {
+          if (user?.uid !== u.uid) return; // akun sudah berganti
+          terapkanDaftarAdmin(snap.val() || {});
+        },
+        (err) => console.warn("Gagal membaca daftar admin:", err.code || err.message),
+      ),
+    );
 
-        stops.push(
-          onValue(
-            ref(db, "banned"),
-            (s) => {
-              bannedData = s.val() || {};
-              if (!panel.hidden) render();
-            },
-            (err) => console.error("Gagal membaca daftar blokir:", err),
-          ),
-          onValue(
-            ref(db, "users"),
-            (s) => {
-              usersData = s.val() || {};
-              if (!panel.hidden) render();
-            },
-            (err) => console.error("Gagal membaca daftar user:", err),
-          ),
-          onValue(
-            ref(db, "admins"),
-            (s) => {
-              setAdminData(s.val() || {});
-            },
-            (err) => console.error("Gagal membaca daftar admin:", err),
-          ),
-        );
-        timer = setInterval(() => {
-          if (!panel.hidden) renderOnline();
-        }, 15000);
-      })
-      .catch((err) =>
-        console.warn("Cek admin gagal:", err.code || err.message),
-      );
-  }
-
-  let adminData = {};
-
-  // ===== Fungsi tambahan untuk cek status admin =====
-  function isAdmin(uid) {
-    return !!adminData[uid];
-  }
-
-  function setAdminData(data) {
-    adminData = data || {};
+    // Nama tampilan admin: dibaca semua akun
+    stops.push(
+      onValue(
+        ref(db, "adminNames"),
+        (snap) => {
+          const baru = snap.val() || {};
+          const sama = JSON.stringify(baru) === JSON.stringify(namaMap);
+          namaMap = baru;
+          if (!sama && onNamaDaftarBerubah) onNamaDaftarBerubah();
+        },
+        (err) => console.warn("Gagal membaca nama admin:", err.code || err.message),
+      ),
+    );
   }
 
   return {
     setUser,
     aktif: () => aktif,
     sudahDiblokir: (uid) => !!bannedData[uid],
-    isAdmin,
-    setAdminData,
+    isAdmin: (uid) => adminSet.has(uid),
+    namaTampil: () => (aktif && namaKustom) || null,
+    // Nama yang ditampilkan untuk pesan dari uid ini (nama admin terbaru, kalau dia admin)
+    namaUntuk: (uid, namaPesan) =>
+      (uid && adminSet.has(uid) && namaMap[uid]) || namaPesan,
+    namaSiap: () => namaSiap,
+    pastikanNama,
+    adminSiap: () => adminSiap,
     hapusPesan,
     blokir,
   };

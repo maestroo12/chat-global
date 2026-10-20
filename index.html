@@ -1,174 +1,315 @@
 <!doctype html>
 <html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <script src="assets/js/theme-init.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <meta
+      name="description"
+      content="FitChat: chat global realtime. Ngobrol sebagai tamu tanpa daftar, atau login Google untuk kirim foto/file dan pesan tanpa batas."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FitChat (Fitnah Chat)" />
+    <meta
+      property="og:description"
+      content="Chat global realtime. Masuk sebagai tamu atau login Google."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <title>FitChat (Fitnah Chat)</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f766e" />
-  <script src="assets/js/theme-init.js"></script>
-  <link rel="stylesheet" href="assets/css/style.css" />
-  <meta name="description"
-    content="FitChat: chat global realtime. Ngobrol sebagai tamu tanpa daftar, atau login Google untuk kirim foto/file dan pesan tanpa batas." />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="FitChat (Fitnah Chat)" />
-  <meta property="og:description" content="Chat global realtime. Masuk sebagai tamu atau login Google." />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <title>FitChat (Fitnah Chat)</title>
-</head>
-
-<body>
-  <div id="chat-container">
-    <header id="header">
-      <div id="header-info">
-        <h1>FitChat (Fitnah Chat)</h1>
-        <span id="online-status"><i class="dot"></i>Online</span>
-      </div>
-      <div id="header-actions">
-        <button id="admin-btn" type="button" aria-label="Panel admin" title="Panel admin" hidden>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </button>
-        <button id="news-btn" type="button" aria-label="Lihat pembaruan" title="Yang baru">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
-          </svg>
-        </button>
-        <button id="theme-btn" type="button" aria-label="Ganti ke mode gelap" title="Ganti ke mode gelap">
-          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="4" />
+  <body>
+    <div id="chat-container">
+      <header id="header">
+        <div id="header-info">
+          <h1>FitChat (Fitnah Chat)</h1>
+          <span id="online-status"><i class="dot"></i>Online</span>
+        </div>
+        <div id="header-actions">
+          <button
+            id="admin-btn"
+            type="button"
+            aria-label="Panel admin"
+            title="Panel admin"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
-                d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-            </g>
-          </svg>
-        </button>
-        <button id="login-btn" type="button">Login Google</button>
-      </div>
-    </header>
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+              />
+            </svg>
+          </button>
+          <button
+            id="news-btn"
+            type="button"
+            aria-label="Lihat pembaruan"
+            title="Yang baru"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"
+              />
+            </svg>
+          </button>
+          <button
+            id="theme-btn"
+            type="button"
+            aria-label="Ganti ke mode gelap"
+            title="Ganti ke mode gelap"
+          >
+            <svg
+              class="icon-moon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"
+              />
+            </svg>
+            <svg
+              class="icon-sun"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+            >
+              <g
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path
+                  d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                />
+              </g>
+            </svg>
+          </button>
+          <button id="login-btn" type="button">Login Google</button>
+        </div>
+      </header>
 
-    <main id="messages" aria-live="polite"></main>
+      <main id="messages" aria-live="polite"></main>
 
-    <div id="input-area">
-      <div class="name-input-wrapper">
-        <input type="text" id="user-name" placeholder="Nama kamu" autocomplete="nickname" maxlength="24" />
-        <span id="name-limit-info"></span>
-      </div>
-
-      <div id="attach-preview" hidden></div>
-
-      <div id="reply-preview" hidden>
-        <div class="reply-preview-content">
-          <span class="reply-preview-label">Membalas pesan</span>
-          <strong id="reply-preview-name"></strong>
-          <span id="reply-preview-text"></span>
+      <div id="input-area">
+        <div class="name-input-wrapper">
+          <input
+            type="text"
+            id="user-name"
+            placeholder="Nama kamu"
+            autocomplete="nickname"
+            maxlength="24"
+          />
+          <span id="name-limit-info"></span>
         </div>
 
-        <button id="reply-cancel" type="button" aria-label="Batalkan balasan">
-          ×
+        <div id="attach-preview" hidden></div>
+
+        <div id="reply-preview" hidden>
+          <div class="reply-preview-content">
+            <span class="reply-preview-label">Membalas pesan</span>
+            <strong id="reply-preview-name"></strong>
+            <span id="reply-preview-text"></span>
+          </div>
+
+          <button id="reply-cancel" type="button" aria-label="Batalkan balasan">
+            ×
+          </button>
+        </div>
+
+        <div id="compose">
+          <button
+            id="attach-btn"
+            type="button"
+            aria-label="Lampirkan foto atau file"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"
+              />
+            </svg>
+          </button>
+          <input type="file" id="file-input" hidden />
+          <input
+            type="text"
+            id="message-input"
+            placeholder="Ketik pesan"
+            autocomplete="off"
+            enterkeyhint="send"
+          />
+          <button id="send-btn" type="button" aria-label="Kirim pesan">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu pesan (balas & hapus) -->
+    <div id="sheet" hidden>
+      <div class="sheet-backdrop" data-tutup></div>
+      <div
+        class="sheet-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sheet-title"
+      >
+        <p id="sheet-title" class="sheet-title">Opsi pesan</p>
+        <p id="sheet-preview" class="sheet-preview"></p>
+        <button id="sheet-reply" type="button">
+          <span>Balas pesan</span>
+          <small>Tulis balasan untuk pesan ini.</small>
         </button>
-      </div>
-
-      <div id="compose">
-        <button id="attach-btn" type="button" aria-label="Lampirkan foto atau file" hidden>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2" />
-          </svg>
+        <button id="sheet-hapus-saya" type="button">
+          <span>Hapus untuk saya</span>
+          <small
+            >Hanya hilang dari layarmu. Orang lain masih bisa melihatnya.</small
+          >
         </button>
-        <input type="file" id="file-input" hidden />
-        <input type="text" id="message-input" placeholder="Ketik pesan" autocomplete="off" enterkeyhint="send" />
-        <button id="send-btn" type="button" aria-label="Kirim pesan">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path fill="currentColor" d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z" />
-          </svg>
+        <button id="sheet-hapus-semua" type="button" class="danger">
+          <span>Hapus untuk semua orang</span>
+          <small
+            >Isi pesan dihapus, yang tersisa hanya keterangan "Pesan ini telah
+            dihapus".</small
+          >
         </button>
+        <button id="sheet-admin-hapus" type="button" class="danger" hidden>
+          <span>Hapus pesan (admin)</span>
+          <small>Hapus pesan ini untuk semua orang.</small>
+        </button>
+        <button id="sheet-admin-blokir" type="button" class="danger" hidden>
+          <span>Blokir pengirim (admin)</span>
+          <small>Pengirim tidak bisa mengirim pesan lagi.</small>
+        </button>
+        <button id="sheet-batal" type="button" class="plain">Batal</button>
       </div>
     </div>
-  </div>
 
-  <!-- Menu pesan (balas & hapus) -->
-  <div id="sheet" hidden>
-    <div class="sheet-backdrop" data-tutup></div>
-    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
-      <p id="sheet-title" class="sheet-title">Opsi pesan</p>
-      <p id="sheet-preview" class="sheet-preview"></p>
-      <button id="sheet-reply" type="button">
-        <span>Balas pesan</span>
-        <small>Tulis balasan untuk pesan ini.</small>
-      </button>
-      <button id="sheet-hapus-saya" type="button">
-        <span>Hapus untuk saya</span>
-        <small>Hanya hilang dari layarmu. Orang lain masih bisa melihatnya.</small>
-      </button>
-      <button id="sheet-hapus-semua" type="button" class="danger">
-        <span>Hapus untuk semua orang</span>
-        <small>Isi pesan dihapus, yang tersisa hanya keterangan "Pesan ini telah
-          dihapus".</small>
-      </button>
-      <button id="sheet-admin-hapus" type="button" class="danger" hidden>
-        <span>Hapus pesan (admin)</span>
-        <small>Hapus pesan ini untuk semua orang.</small>
-      </button>
-      <button id="sheet-admin-blokir" type="button" class="danger" hidden>
-        <span>Blokir pengirim (admin)</span>
-        <small>Pengirim tidak bisa mengirim pesan lagi.</small>
-      </button>
-      <button id="sheet-batal" type="button" class="plain">Batal</button>
-    </div>
-  </div>
-
-  <!-- Daftar pembaruan -->
-  <div id="news" hidden>
-    <div class="sheet-backdrop" data-tutup-news></div>
-    <div class="news-panel" role="dialog" aria-modal="true" aria-labelledby="news-title">
-      <div class="news-top">
-        <h2 id="news-title">Yang baru di FitChat</h2>
-        <button id="news-close" type="button" aria-label="Tutup">×</button>
-      </div>
-      <div id="news-list"></div>
-    </div>
-  </div>
-
-  <!-- Panel admin -->
-  <div id="admin-panel" hidden>
-    <div class="sheet-backdrop" data-tutup-admin></div>
-    <div class="news-panel" role="dialog" aria-modal="true" aria-labelledby="admin-title">
-      <div class="news-top">
-        <h2 id="admin-title">Panel admin</h2>
-        <button id="admin-close" type="button" aria-label="Tutup">×</button>
-      </div>
-      <div id="admin-body">
-        <section class="admin-section">
-          <h3>
-            Sedang online
-            <span id="admin-online-count" class="admin-count">0</span>
-          </h3>
-          <ul id="admin-online" class="admin-list"></ul>
-        </section>
-        <section class="admin-section">
-          <h3>
-            Diblokir
-            <span id="admin-banned-count" class="admin-count">0</span>
-          </h3>
-          <ul id="admin-banned" class="admin-list"></ul>
-        </section>
+    <!-- Daftar pembaruan -->
+    <div id="news" hidden>
+      <div class="sheet-backdrop" data-tutup-news></div>
+      <div
+        class="news-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="news-title"
+      >
+        <div class="news-top">
+          <h2 id="news-title">Yang baru di FitChat</h2>
+          <button id="news-close" type="button" aria-label="Tutup">×</button>
+        </div>
+        <div id="news-list"></div>
       </div>
     </div>
-  </div>
 
-  <!-- Tampilan gambar penuh -->
-  <div id="lightbox" hidden>
-    <img id="lightbox-img" alt="" />
-  </div>
+    <!-- Panel admin -->
+    <div id="admin-panel" hidden>
+      <div class="sheet-backdrop" data-tutup-admin></div>
+      <div
+        class="news-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-title"
+      >
+        <div class="news-top">
+          <h2 id="admin-title">Panel admin</h2>
+          <button id="admin-close" type="button" aria-label="Tutup">×</button>
+        </div>
+        <div id="admin-body">
+          <section class="admin-section">
+            <h3>Nama tampilan</h3>
+            <form id="admin-name-form">
+              <input
+                type="text"
+                id="admin-name-input"
+                maxlength="24"
+                autocomplete="off"
+                aria-label="Nama tampilan admin"
+              />
+              <button type="submit" class="admin-act">Simpan</button>
+            </form>
+            <p id="admin-name-hint" class="admin-hint">
+              Dipakai di pesan barumu. Kosongkan lalu Simpan untuk kembali ke
+              nama Google.
+            </p>
+          </section>
+          <section class="admin-section">
+            <h3>
+              Sedang online
+              <span id="admin-online-count" class="admin-count">0</span>
+            </h3>
+            <ul id="admin-online" class="admin-list"></ul>
+          </section>
+          <section class="admin-section">
+            <h3>
+              Diblokir
+              <span id="admin-banned-count" class="admin-count">0</span>
+            </h3>
+            <ul id="admin-banned" class="admin-list"></ul>
+          </section>
+          <section class="admin-section">
+            <h3>Hapus riwayat chat</h3>
+            <form id="admin-purge-form">
+              <input
+                type="number"
+                id="admin-purge-input"
+                min="1"
+                max="500"
+                step="1"
+                inputmode="numeric"
+                placeholder="Jumlah pesan"
+                aria-label="Jumlah pesan terlama yang dihapus"
+              />
+              <button type="submit" class="admin-act danger">Hapus</button>
+            </form>
+            <p id="admin-purge-hint" class="admin-hint">
+              Menghapus pesan paling lama (dari atas), maksimal 500 sekali
+              hapus. Permanen, termasuk foto/file-nya.
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
 
-  <script type="module" src="assets/js/main.js"></script>
-</body>
+    <!-- Tampilan gambar penuh -->
+    <div id="lightbox" hidden>
+      <img id="lightbox-img" alt="" />
+    </div>
 
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
 </html>

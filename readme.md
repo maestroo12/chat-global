@@ -11,13 +11,13 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 ## Fitur
 
 - **Chat realtime** untuk semua pengguna dalam satu ruang global.
-- **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama. Batas ganti nama 5x per hari.
+- **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama. Batas ganti nama 5x per hari, baru dihitung saat pesan dengan nama baru benar-benar terkirim.
 - **Login Google**: nama otomatis, centang terverifikasi, kirim foto/file, tanpa batas pesan.
-- **Status badge**: menampilkan status pengguna (Admin/User/Anon) di samping nama.
+- **Status badge**: menampilkan status pengguna (Admin/User/Anon) sebagai teks polos di samping nama. Daftar admin dibaca realtime oleh semua akun, jadi label Admin konsisten untuk siapa pun yang melihat.
 - **Balas pesan** dengan kutipan di dalam gelembung. Ketuk kutipan untuk lompat ke pesan aslinya.
 - **Hapus pesan**: "Hapus untuk saya" (hanya hilang di layarmu) atau "Hapus untuk semua orang" (isi pesan dihapus, tersisa keterangan "Pesan ini telah dihapus").
 - **Kirim foto dan file** (khusus akun Google). Foto dikecilkan otomatis di browser sebelum dikirim, dan bisa dibuka dalam tampilan penuh (lightbox).
-- **Riwayat pesan**: tombol "Muat pesan lama" membuka hingga 100 pesan terakhir.
+- **Riwayat pesan**: tombol "Muat pesan lama" membuka hingga 1000 pesan terakhir, 100 pesan per muatan (tidak otomatis saat scroll). Admin bisa menghapus N pesan terlama lewat Panel admin.
 - **Indikator online**: jumlah orang yang sedang online tampil di bawah judul.
 - **Mode terang/gelap**: mengikuti setelan perangkat dan bisa diganti manual.
 - **Menu "Yang baru"**: daftar pembaruan dengan titik merah pada tombol lonceng saat ada info baru.
@@ -55,7 +55,7 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | Ganti nama tamu per 24 jam        | 5 kali            |
 | Ukuran foto (dikecilkan otomatis) | di bawah 350 KB   |
 | Ukuran file biasa                 | 500 KB            |
-| Riwayat pesan yang bisa dibuka    | 100 pesan terbaru |
+| Riwayat pesan yang bisa dibuka    | 1000 pesan terbaru |
 | Pesan per muatan                  | 50 pesan          |
 
 > **Catatan:** `database.rules.json` memakai plafon yang lebih longgar sebagai pengaman terakhir (maks. 30 pesan tamu per 24 jam, 5 ganti nama tamu per 24 jam, file 512000 byte). Jika mengubah angka di `config.js`, sesuaikan juga aturan terkait di `database.rules.json`.

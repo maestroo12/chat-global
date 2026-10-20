@@ -387,29 +387,27 @@ body {
   vertical-align: 1px;
 }
 
+/* Status (Admin / User / Anon): teks polos tanpa latar, ikut warna tema */
 .status-badge {
-  display: inline-flex;
-  align-items: center;
   margin-left: 6px;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #fff;
-  border-radius: 4px;
-  vertical-align: 1px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.status-badge:empty {
+  display: none;
+}
+
+.status-badge::before {
+  content: "\00b7";
+  margin-right: 6px;
 }
 
 .status-badge.status-admin {
-  background: #dc2626;
-}
-
-.status-badge.status-user {
-  background: var(--teal);
-}
-
-.status-badge.status-anon {
-  background: #6b7280;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 /* ---------- Kutipan balasan di dalam bubble ---------- */
@@ -615,6 +613,14 @@ body {
   font-size: 11px;
   color: var(--muted);
   padding-left: 4px;
+}
+
+#name-limit-info.habis {
+  color: var(--danger);
+}
+
+#name-limit-info:empty {
+  display: none;
 }
 
 #message-input {
@@ -1264,6 +1270,39 @@ button:focus-visible {
 
 .admin-act:hover {
   background: var(--btn-soft-hover);
+}
+
+#admin-name-form,
+#admin-purge-form {
+  display: flex;
+  gap: 8px;
+}
+
+#admin-name-input,
+#admin-purge-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 16px;
+  /* cegah auto-zoom di iOS */
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  outline: none;
+}
+
+#admin-name-input:focus,
+#admin-purge-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--tint-me);
+}
+
+.admin-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .admin-act.danger {

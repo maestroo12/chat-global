@@ -96,7 +96,7 @@ themeBtn.addEventListener("click", () => {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch { }
+  } catch {}
   terapkanTema(baru);
 });
 
@@ -160,6 +160,16 @@ const admin = initAdmin({
     diblokir = status;
     segarkanKirim();
   },
+  onAdminBerubah: segarkanNama,
+  onNamaDaftarBerubah: segarkanNama,
+  // Nama tampilan admin berubah: samakan nama di daftar online
+  onNamaAdmin() {
+    if (!isGoogle(currentUser)) return;
+    update(ref(db, `users/${currentUser.uid}`), {
+      name: namaTampil(currentUser),
+    }).catch(() => {});
+  },
+  namaDefault: (user) => namaGoogle(user),
 });
 
 // Nama akun Google. Kalau profil tidak punya nama, pakai bagian depan email.
@@ -170,6 +180,14 @@ function namaGoogle(user) {
   const email =
     user.email || user.providerData?.find((p) => p.email)?.email || "";
   return (user.displayName || dariProvider || email.split("@")[0] || "").slice(
+    0,
+    40,
+  );
+}
+
+// Nama yang dipakai di chat untuk akun Google: nama kustom admin kalau ada, kalau tidak nama Google
+function namaTampil(user) {
+  return (admin.namaTampil() || namaGoogle(user) || "Pengguna Google").slice(
     0,
     40,
   );
@@ -248,7 +266,7 @@ function bukaNews() {
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch { }
+  } catch {}
   perbaruiTitikNews();
   newsClose.focus();
 }
@@ -306,8 +324,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-    messagesDiv.scrollTop -
-    messagesDiv.clientHeight <
+      messagesDiv.scrollTop -
+      messagesDiv.clientHeight <
     160
   );
 }
@@ -389,7 +407,9 @@ lightbox.addEventListener("click", () => {
 const kutipanLuar = new Map();
 
 function namaPengirim(data) {
-  return data.uid === currentUser?.uid ? "Kamu" : data.name || "Pengguna";
+  return data.uid === currentUser?.uid
+    ? "Kamu"
+    : admin.namaUntuk(data.uid, data.name) || "Pengguna";
 }
 
 function ringkasanPesan(data) {
@@ -581,6 +601,49 @@ function buatLampiran(f) {
   return btn;
 }
 
+// Status di samping nama: Admin / User / Anon. Teks polos tanpa latar, ikut warna tema.
+// Label User/Admin baru ditampilkan setelah daftar admin selesai dibaca, supaya admin
+// tidak sempat tampil sebagai "User" lalu berubah sendiri.
+function terapkanStatus(el, uid, verified) {
+  el.className = "status-badge";
+  el.removeAttribute("title");
+
+  if (!verified) {
+    el.classList.add("status-anon");
+    el.textContent = "Anon";
+    el.title = "Pengguna tamu";
+    return;
+  }
+  if (!admin.adminSiap()) {
+    el.textContent = "";
+    return;
+  }
+  if (admin.isAdmin(uid)) {
+    el.classList.add("status-admin");
+    el.textContent = "Admin";
+    el.title = "Administrator";
+  } else {
+    el.classList.add("status-user");
+    el.textContent = "User";
+    el.title = "Akun Google terverifikasi";
+  }
+}
+
+// Dipanggil saat daftar admin berubah: cukup perbarui label, tanpa render ulang chat
+function perbaruiStatusBadge() {
+  listDiv.querySelectorAll(".status-badge[data-uid]").forEach((el) => {
+    terapkanStatus(el, el.dataset.uid, el.dataset.verified === "1");
+  });
+}
+
+// Render ulang semua pesan tanpa menggeser posisi scroll. Dipakai saat nama admin
+// berubah, supaya riwayat lama ikut memakai nama terbaru.
+function segarkanNama() {
+  const bawah = dekatBawah();
+  renderSemua("jaga");
+  if (bawah) scrollBawah();
+}
+
 function buatElemen(key, data) {
   const isMe = data.uid
     ? data.uid === currentUser?.uid
@@ -599,29 +662,8 @@ function buatElemen(key, data) {
   if (!isMe) {
     const name = document.createElement("span");
     name.classList.add("msg-name");
-    name.textContent = data.name;
-
-    // Status badge: admin, user, atau anonymous
-    const statusBadge = document.createElement("span");
-    statusBadge.classList.add("status-badge");
-
-    if (data.verified) {
-      // Cek apakah admin (berdasarkan daftar admin di database)
-      if (admin.isAdmin && admin.isAdmin(data.uid)) {
-        statusBadge.classList.add("status-admin");
-        statusBadge.textContent = "Admin";
-        statusBadge.title = "Administrator";
-      } else {
-        statusBadge.classList.add("status-user");
-        statusBadge.textContent = "User";
-        statusBadge.title = "Akun Google terverifikasi";
-      }
-    } else {
-      statusBadge.classList.add("status-anon");
-      statusBadge.textContent = "Anon";
-      statusBadge.title = "Pengguna tamu";
-    }
-    name.appendChild(statusBadge);
+    // Admin: pakai nama tampilan terbaru, bukan nama yang tersimpan di pesan lama
+    name.textContent = admin.namaUntuk(data.uid, data.name);
 
     // Centang hanya untuk pesan dari akun Google (divalidasi oleh Database Rules)
     if (data.verified) {
@@ -631,6 +673,13 @@ function buatElemen(key, data) {
       badge.textContent = "✓";
       name.appendChild(badge);
     }
+
+    const statusBadge = document.createElement("span");
+    statusBadge.dataset.uid = data.uid || "";
+    statusBadge.dataset.verified = data.verified ? "1" : "";
+    terapkanStatus(statusBadge, data.uid, !!data.verified);
+    name.appendChild(statusBadge);
+
     bubble.appendChild(name);
   }
 
@@ -760,13 +809,37 @@ function terimaBaru(key, data) {
   perbaruiTombolLama();
 }
 
+// Semua pemantau chat dikumpulkan di sini supaya bisa dihentikan & dipasang ulang
+// saat akun berganti (Firebase memutus listener yang izin bacanya hilang saat logout).
+let stopsChat = [];
+
+function hentikanListener() {
+  stopsChat.forEach((f) => f());
+  stopsChat = [];
+  listenerAktif = false;
+}
+
+// Kosongkan riwayat di layar supaya dimuat ulang dari awal untuk akun yang baru
+function resetRiwayat() {
+  pesan.clear();
+  kutipanLuar.clear();
+  keys = [];
+  hasMore = true;
+  loadingOlder = false;
+  hariTerakhir = null;
+  listDiv.replaceChildren();
+  perbaruiTombolLama();
+}
+
 function pantauPerubahan(q) {
-  onChildChanged(q, (snap) => {
-    pesan.set(snap.key, snap.val());
-    perbaruiElemen(snap.key);
-    perbaruiKutipanKe(snap.key);
-    tampilkanReplyPreview();
-  });
+  stopsChat.push(
+    onChildChanged(q, (snap) => {
+      pesan.set(snap.key, snap.val());
+      perbaruiElemen(snap.key);
+      perbaruiKutipanKe(snap.key);
+      tampilkanReplyPreview();
+    }),
+  );
 }
 
 function mulaiListener() {
@@ -774,32 +847,62 @@ function mulaiListener() {
   listenerAktif = true;
 
   const liveQ = query(chatRef, orderByKey(), limitToLast(HALAMAN));
-  onChildAdded(
-    liveQ,
-    (snap) => terimaBaru(snap.key, snap.val()),
-    (err) => console.error("Gagal membaca chat:", err),
+  stopsChat.push(
+    onChildAdded(
+      liveQ,
+      (snap) => terimaBaru(snap.key, snap.val()),
+      (err) => console.error("Gagal membaca chat:", err),
+    ),
   );
   pantauPerubahan(liveQ);
   get(liveQ)
     .then((s) => {
       hasMore = s.size >= HALAMAN;
+      console.info(
+        `Riwayat: ${s.size} pesan terbaru dimuat, ada pesan lama: ${hasMore}`,
+      );
       perbaruiTombolLama();
     })
-    .catch(() => { });
+    .catch((err) =>
+      console.warn("Gagal mengecek riwayat:", err.code || err.message),
+    );
 
-  onValue(usersRef, (snapshot) => {
-    const data = snapshot.val();
-    let count = 0;
-    if (data) {
-      const now = Date.now();
-      Object.values(data).forEach((user) => {
-        if (user.lastSeen && now - user.lastSeen < 60000) count++;
-      });
-    }
-    const dot = document.createElement("i");
-    dot.classList.add("dot");
-    onlineStatus.replaceChildren(dot, `${count} Online`);
-  });
+  // Admin menghapus pesan terlama secara permanen: buang dari tampilan semua orang
+  stopsChat.push(
+    onValue(
+      ref(db, "purge"),
+      (snap) => {
+        const upTo = snap.val()?.upTo;
+        if (typeof upTo !== "string") return;
+        if (!keys.some((k) => k <= upTo)) return;
+        for (const k of keys) if (k <= upTo) pesan.delete(k);
+        keys = keys.filter((k) => k > upTo);
+        segarkanNama();
+        perbaruiTombolLama();
+      },
+      (err) =>
+        console.warn(
+          "Gagal memantau penghapusan riwayat:",
+          err.code || err.message,
+        ),
+    ),
+  );
+
+  stopsChat.push(
+    onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      let count = 0;
+      if (data) {
+        const now = Date.now();
+        Object.values(data).forEach((user) => {
+          if (user.lastSeen && now - user.lastSeen < 60000) count++;
+        });
+      }
+      const dot = document.createElement("i");
+      dot.classList.add("dot");
+      onlineStatus.replaceChildren(dot, `${count} Online`);
+    }),
+  );
 }
 
 // ===== RIWAYAT (muat pesan lama, sampai MAX_RIWAYAT pesan) =====
@@ -853,9 +956,8 @@ async function muatLama() {
 }
 
 olderBtn.addEventListener("click", muatLama);
-messagesDiv.addEventListener("scroll", () => {
-  if (messagesDiv.scrollTop < 60) muatLama();
-});
+// Pesan lama sengaja TIDAK dimuat otomatis saat scroll: tiap HALAMAN pesan harus
+// menekan tombol "Muat pesan lama" dulu.
 
 // ===== MENU PESAN (balas & hapus) =====
 function bukaMenu(key) {
@@ -1277,10 +1379,13 @@ function pantauNamaChange(user) {
   pastikanPerangkat(user)
     .then((dev) => {
       if (currentUser?.uid !== user.uid) return;
-      stopPantauNameChange = onValue(ref(db, `deviceNameLimit/${dev}`), (snap) => {
-        nameChangeData = snap.val();
-        terapkanLimitNama();
-      });
+      stopPantauNameChange = onValue(
+        ref(db, `deviceNameLimit/${dev}`),
+        (snap) => {
+          nameChangeData = snap.val();
+          terapkanLimitNama();
+        },
+      );
     })
     .catch((err) => {
       console.error("Gagal menyiapkan limit nama:", err);
@@ -1288,18 +1393,21 @@ function pantauNamaChange(user) {
 }
 
 function terapkanLimitNama() {
-  if (isGoogle(currentUser)) return;
-  const st = statusLimitNama();
   const info = document.getElementById("name-limit-info");
-  if (info) {
-    if (st.sisa <= 0) {
-      const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
-      info.textContent = ` (Batas ganti nama habis. Coba lagi ${jam} jam lagi)`;
-      info.style.color = "#ef4444";
-    } else {
-      info.textContent = ` (${st.sisa}/${MAX_ANON_NAME_CHANGES} hari ini)`;
-      info.style.color = "#6b7280";
-    }
+  if (!info) return;
+  if (isGoogle(currentUser)) {
+    info.textContent = "";
+    return;
+  }
+
+  const st = statusLimitNama();
+  const habis = st.sisa <= 0;
+  info.classList.toggle("habis", habis);
+  if (habis) {
+    const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
+    info.textContent = `Batas ganti nama habis. Coba lagi ${jam} jam lagi.`;
+  } else {
+    info.textContent = `Sisa ganti nama: ${st.sisa} dari ${MAX_ANON_NAME_CHANGES} hari ini`;
   }
 }
 
@@ -1336,16 +1444,37 @@ async function kirimPesan() {
     return;
   }
 
+  // Admin: pastikan nama tampilan sudah terbaca sebelum dipakai
+  if (isGoogle(currentUser) && admin.aktif() && !admin.namaSiap()) {
+    sedangKirim = true;
+    aturTombolKirim();
+    try {
+      await admin.pastikanNama();
+    } finally {
+      sedangKirim = false;
+      aturTombolKirim();
+    }
+    if (!currentUser) return;
+  }
+
   const google = isGoogle(currentUser);
   const uid = currentUser.uid;
   const name = google
-    ? namaGoogle(currentUser)
+    ? admin.namaTampil() || namaGoogle(currentUser)
     : nameInput.value.trim() || "Orang Asing";
 
   if (!name) {
     alert(
       "Akun Google ini tidak punya nama, jadi tidak bisa dipakai untuk chat.",
     );
+    return;
+  }
+
+  // Ganti nama baru dihitung kalau pesan dengan nama baru ini benar-benar terkirim,
+  // bukan saat kolom nama diubah. Pesan pertama (belum ada nama sebelumnya) gratis.
+  const gantiNama = !google && !!namaTerkirim && name !== namaTerkirim;
+  if (gantiNama && statusLimitNama().sisa <= 0) {
+    tolakGantiNama();
     return;
   }
 
@@ -1390,8 +1519,16 @@ async function kirimPesan() {
             data.file.h = lampiran.h;
           }
         }
-      } else if (!(await tambahkanLimitTamu(updates))) {
-        return; // jatah tamu habis, pesan tidak dikirim
+      } else {
+        if (!(await tambahkanLimitTamu(updates))) {
+          return; // jatah tamu habis, pesan tidak dikirim
+        }
+        // Dikirim dalam satu update yang sama dengan pesannya: kalau pesan gagal,
+        // hitungan ganti nama juga tidak bertambah.
+        if (gantiNama && !(await tambahkanLimitNamaChange(updates))) {
+          tolakGantiNama();
+          return;
+        }
       }
 
       try {
@@ -1401,6 +1538,13 @@ async function kirimPesan() {
         if (percobaan === 1 || google || err.code !== "PERMISSION_DENIED")
           throw err;
       }
+    }
+
+    if (!google) {
+      namaTerkirim = name;
+      simpan.tulis("chatName", name);
+      // Samakan nama di daftar online (panel admin), tidak masalah kalau gagal
+      update(ref(db, `users/${uid}`), { name }).catch(() => {});
     }
 
     input.value = "";
@@ -1424,37 +1568,30 @@ input.addEventListener("keydown", (e) => {
 });
 
 // ===== NAMA (hanya untuk tamu) =====
-let namaLama = null;
+// Nama terakhir yang benar-benar dipakai di pesan terkirim. Mengubah kolom nama saja
+// tidak memakai jatah ganti nama; jatah baru terpakai saat pesannya terkirim.
+let namaTerkirim = "";
 
-nameInput.addEventListener("change", async () => {
-  if (!isGoogle(currentUser)) {
-    const namaBaru = nameInput.value.trim();
-    if (namaBaru === namaLama) return;
+function tolakGantiNama() {
+  alert(
+    `Batas ganti nama habis untuk hari ini. Nama dikembalikan ke "${namaTerkirim}". Kirim lagi untuk memakai nama itu.`,
+  );
+  nameInput.value = namaTerkirim;
+  terapkanLimitNama();
+}
 
-    const st = statusLimitNama();
-    if (st.sisa <= 0) {
-      alert("Batas ganti nama habis untuk hari ini. Coba lagi besok atau login Google.");
-      nameInput.value = namaLama || "";
-      return;
-    }
+nameInput.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  input.focus(); // Enter di kolom nama hanya pindah ke kolom pesan
+});
 
-    if (namaBaru) {
-      try {
-        const updates = {};
-        if (!(await tambahkanLimitNamaChange(updates))) {
-          alert("Batas ganti nama habis untuk hari ini.");
-          nameInput.value = namaLama || "";
-          return;
-        }
-        await update(ref(db), updates);
-        simpan.tulis("chatName", namaBaru);
-        namaLama = namaBaru;
-      } catch (err) {
-        console.error("Gagal mengganti nama:", err);
-        alert("Gagal mengganti nama: " + (err.code || err.message));
-        nameInput.value = namaLama || "";
-      }
-    }
+// Kalau jatah sudah habis, tolak perubahan nama sejak awal (tanpa memakai jatah)
+nameInput.addEventListener("change", () => {
+  if (isGoogle(currentUser)) return;
+  const baru = nameInput.value.trim() || "Orang Asing";
+  if (namaTerkirim && baru !== namaTerkirim && statusLimitNama().sisa <= 0) {
+    tolakGantiNama();
   }
 });
 
@@ -1463,7 +1600,7 @@ function mulaiPresence(user) {
   clearInterval(heartbeat);
   const userRef = ref(db, `users/${user.uid}`);
   const nama = isGoogle(user)
-    ? namaGoogle(user) || "Pengguna Google"
+    ? namaTampil(user)
     : nameInput.value.trim() || "Orang Asing";
 
   update(userRef, { name: nama, online: true, lastSeen: Date.now() });
@@ -1495,6 +1632,7 @@ loginBtn.addEventListener("click", async () => {
 });
 
 // ===== STATUS AUTH =====
+let uidChat = null; // uid yang sedang dipakai untuk listener chat
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     admin.setUser(null);
@@ -1512,16 +1650,23 @@ onAuthStateChanged(auth, (user) => {
   const google = isGoogle(user);
 
   // Akun Google: nama otomatis dari Google, kolom nama disembunyikan, bisa kirim file
-  nameInput.hidden = google;
+  nameInput.closest(".name-input-wrapper").hidden = google;
   attachBtn.hidden = !google;
   if (!google) {
-    namaLama = simpan.baca("chatName") || "";
-    nameInput.value = namaLama;
+    namaTerkirim = simpan.baca("chatName") || "";
+    nameInput.value = namaTerkirim;
     lampiran = null;
     tampilkanPreview();
   }
-  loginBtn.textContent = google ? "Keluar" : "Login Google";
+  loginBtn.textContent = google ? "Logout" : "Login Google";
 
+  // Akun berganti (login/logout): pasang ulang listener & muat riwayat dari awal,
+  // karena listener lama diputus Firebase saat izin bacanya hilang.
+  if (uidChat !== user.uid) {
+    hentikanListener();
+    resetRiwayat();
+    uidChat = user.uid;
+  }
   mulaiListener();
   mulaiPresence(user);
   admin.setUser(user);

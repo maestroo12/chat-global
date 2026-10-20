@@ -11,6 +11,24 @@
       }
     },
 
+    "adminNames": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24"
+      }
+    },
+
+    "purge": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
+      ".validate": "newData.hasChildren(['upTo', 'at'])",
+
+      "upTo": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128" },
+      "at": { ".validate": "newData.isNumber()" },
+      "$other": { ".validate": false }
+    },
+
     "banned": {
       ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
 
@@ -29,7 +47,7 @@
       ".read": "auth != null",
 
       "$messageId": {
-        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('banned').child(auth.uid).exists() && newData.child('uid').val() === auth.uid && !newData.child('deleted').exists() && !newData.child('deletedByAdmin').exists()) || (data.exists() && data.child('uid').val() === auth.uid && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && !newData.child('deletedByAdmin').exists() && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()) || (auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true && data.exists() && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && newData.child('deletedByAdmin').val() === true && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()))",
+        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('banned').child(auth.uid).exists() && newData.child('uid').val() === auth.uid && !newData.child('deleted').exists() && !newData.child('deletedByAdmin').exists()) || (data.exists() && data.child('uid').val() === auth.uid && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && !newData.child('deletedByAdmin').exists() && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()) || (auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true && data.exists() && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && newData.child('deletedByAdmin').val() === true && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()) || (auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true && !newData.exists()))",
 
         ".validate": "newData.hasChildren(['uid', 'name', 'timestamp']) && (newData.child('deleted').val() === true || newData.child('text').exists() || newData.child('file').exists()) && (data.exists() || (auth.token.firebase.sign_in_provider === 'google.com' ? newData.child('verified').val() === true : !newData.child('verified').exists()))",
 
@@ -87,7 +105,7 @@
     "files": {
       "$fileId": {
         ".read": "auth != null",
-        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('banned').child(auth.uid).exists() && auth.token.firebase.sign_in_provider === 'google.com' && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && !newData.exists()) || (data.exists() && !newData.exists() && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true))",
+        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('banned').child(auth.uid).exists() && auth.token.firebase.sign_in_provider === 'google.com' && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && !newData.exists()) || (!newData.exists() && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true))",
         ".validate": "newData.hasChildren(['uid', 'name', 'type', 'size', 'data'])",
 
         "uid": {
