@@ -30,6 +30,7 @@ import {
 import { firebaseConfig, LIMITS } from "./config.js";
 import { formatUkuran, simpan } from "./utils.js";
 import { NEWS } from "./news.js";
+import { initAdmin } from "./admin.js";
 
 // ===== INIT =====
 const app = initializeApp(firebaseConfig);
@@ -56,6 +57,8 @@ const sheetHapusSaya = document.getElementById("sheet-hapus-saya");
 const sheetHapusSemua = document.getElementById("sheet-hapus-semua");
 const sheetBatal = document.getElementById("sheet-batal");
 const sheetReply = document.getElementById("sheet-reply");
+const sheetAdminHapus = document.getElementById("sheet-admin-hapus");
+const sheetAdminBlokir = document.getElementById("sheet-admin-blokir");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
 const replyPreview = document.getElementById("reply-preview");
@@ -130,6 +133,7 @@ let currentUser = null;
 let listenerAktif = false;
 let heartbeat = null;
 let stopPantauSisa = null;
+let diblokir = false; // akun ini diblokir admin
 let stopHidden = null;
 let timerLimit = null;
 let limitData = null; // { count, start } milik perangkat ini
@@ -147,6 +151,15 @@ let hariTerakhir = null;
 let menuTarget = null;
 
 const isGoogle = (user) => !!user && !user.isAnonymous;
+
+// ===== ADMIN (logikanya ada di admin.js) =====
+const admin = initAdmin({
+  db,
+  onDiblokir(status) {
+    diblokir = status;
+    segarkanKirim();
+  },
+});
 
 // Nama akun Google. Kalau profil tidak punya nama, pakai bagian depan email.
 function namaGoogle(user) {
@@ -601,9 +614,11 @@ function buatElemen(key, data) {
   if (data.deleted) {
     const text = document.createElement("span");
     text.classList.add("msg-text");
-    text.textContent = isMe
-      ? "Kamu menghapus pesan ini"
-      : "Pesan ini telah dihapus";
+    text.textContent = data.deletedByAdmin
+      ? "Pesan ini dihapus oleh admin"
+      : isMe
+        ? "Kamu menghapus pesan ini"
+        : "Pesan ini telah dihapus";
     bubble.appendChild(text);
   } else {
     if (data.replyTo) bubble.appendChild(buatKutipanReply(data.replyTo));
@@ -839,6 +854,16 @@ function bukaMenu(key) {
 
   sheetReply.hidden = !!data.deleted;
   sheetHapusSemua.hidden = !(milikku && !data.deleted);
+
+  // Opsi moderasi: hanya tampil untuk admin, pada pesan orang lain
+  const bisaModerasi = admin.aktif() && !milikku;
+  sheetAdminHapus.hidden = !(bisaModerasi && !data.deleted);
+  sheetAdminBlokir.hidden = !(
+    bisaModerasi &&
+    data.uid &&
+    !admin.sudahDiblokir(data.uid)
+  );
+
   sheet.hidden = false;
 
   (sheetReply.hidden ? sheetHapusSaya : sheetReply).focus();
@@ -888,6 +913,24 @@ sheetHapusSemua.addEventListener("click", async () => {
   } catch (err) {
     alert("Gagal menghapus untuk semua: " + (err.code || err.message));
   }
+});
+
+// Admin: hapus pesan orang lain untuk semua
+sheetAdminHapus.addEventListener("click", () => {
+  const key = menuTarget;
+  const data = key && pesan.get(key);
+  if (!data) return;
+  tutupMenu();
+  if (data.file?.id) fileCache.delete(data.file.id);
+  admin.hapusPesan(key, data);
+});
+
+// Admin: blokir pengirim pesan
+sheetAdminBlokir.addEventListener("click", () => {
+  const data = menuTarget && pesan.get(menuTarget);
+  if (!data?.uid) return;
+  tutupMenu();
+  admin.blokir(data.uid, data.name);
 });
 
 document.addEventListener("keydown", (e) => {
@@ -1100,6 +1143,13 @@ function statusLimit() {
 }
 
 function aturTombolKirim() {
+  attachBtn.disabled = diblokir;
+  if (diblokir) {
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = "Akunmu diblokir admin.";
+    return;
+  }
   if (isGoogle(currentUser)) {
     input.disabled = false;
     sendBtn.disabled = sedangKirim;
@@ -1108,6 +1158,16 @@ function aturTombolKirim() {
   const habis = statusLimit().sisa <= 0;
   input.disabled = habis;
   sendBtn.disabled = habis || sedangKirim;
+}
+
+// Dipanggil saat status blokir berubah: pulihkan placeholder yang benar
+function segarkanKirim() {
+  if (isGoogle(currentUser)) {
+    input.placeholder = "Ketik pesan";
+    aturTombolKirim();
+  } else {
+    terapkanLimit();
+  }
 }
 
 function terapkanLimit() {
@@ -1172,7 +1232,7 @@ async function tambahkanLimitTamu(updates) {
 
 // ===== KIRIM PESAN =====
 async function kirimPesan() {
-  if (sedangKirim || !currentUser) return;
+  if (sedangKirim || !currentUser || diblokir) return;
   const text = input.value.trim();
   const adaFile = !!lampiran && isGoogle(currentUser);
   if (!text && !adaFile) return;
@@ -1317,6 +1377,7 @@ loginBtn.addEventListener("click", async () => {
 // ===== STATUS AUTH =====
 onAuthStateChanged(auth, (user) => {
   if (!user) {
+    admin.setUser(null);
     signInAnonymously(auth).catch((err) => {
       console.error("Anonymous gagal:", err);
       input.placeholder =
@@ -1342,6 +1403,7 @@ onAuthStateChanged(auth, (user) => {
 
   mulaiListener();
   mulaiPresence(user);
+  admin.setUser(user);
   pantauSisa(user);
   pantauHidden(user);
   renderSemua();

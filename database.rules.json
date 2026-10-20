@@ -3,16 +3,52 @@
     ".read": false,
     ".write": false,
 
+    "admins": {
+      ".read": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "blocked": {
+      ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
+
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
+
+        ".validate": "newData.hasChildren(['name'])",
+
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+
+        "by": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+
+        "at": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+
     "chat": {
       ".read": "auth != null",
 
       "$messageId": {
-        ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && !newData.child('deleted').exists()) || (data.exists() && data.child('uid').val() === auth.uid && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()))",
+        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('blocked').child(auth.uid).exists() && newData.child('uid').val() === auth.uid && !newData.child('deleted').exists() && !newData.child('deletedByAdmin').exists()) || (data.exists() && data.child('uid').val() === auth.uid && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && !newData.child('deletedByAdmin').exists() && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()) || (auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true && data.exists() && data.child('deleted').val() !== true && newData.exists() && newData.child('deleted').val() === true && newData.child('deletedByAdmin').val() === true && !newData.child('text').exists() && !newData.child('file').exists() && newData.child('uid').val() === data.child('uid').val() && newData.child('name').val() === data.child('name').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('verified').val() === data.child('verified').val() && newData.child('replyTo').val() === data.child('replyTo').val()))",
 
         ".validate": "newData.hasChildren(['uid', 'name', 'timestamp']) && (newData.child('deleted').val() === true || newData.child('text').exists() || newData.child('file').exists()) && (data.exists() || (auth.token.firebase.sign_in_provider === 'google.com' ? newData.child('verified').val() === true : !newData.child('verified').exists()))",
 
         "uid": {
-          ".validate": "newData.isString() && newData.val() === auth.uid"
+          ".validate": "newData.isString() && (data.exists() ? newData.val() === data.val() : newData.val() === auth.uid)"
         },
 
         "name": {
@@ -33,6 +69,10 @@
 
         "deleted": {
           ".validate": "newData.val() === true"
+        },
+
+        "deletedByAdmin": {
+          ".validate": "newData.val() === true && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true"
         },
 
         "replyTo": {
@@ -81,7 +121,7 @@
       "$fileId": {
         ".read": "auth != null",
 
-        ".write": "auth != null && ((!data.exists() && newData.exists() && auth.token.firebase.sign_in_provider === 'google.com' && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && !newData.exists()))",
+        ".write": "auth != null && ((!data.exists() && newData.exists() && !root.child('blocked').child(auth.uid).exists() && auth.token.firebase.sign_in_provider === 'google.com' && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && !newData.exists()) || (data.exists() && !newData.exists() && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true))",
 
         ".validate": "newData.hasChildren(['uid', 'name', 'type', 'size', 'data'])",
 
@@ -161,7 +201,7 @@
       "$deviceId": {
         ".read": "auth != null && root.child('anonDevice').child(auth.uid).val() === $deviceId",
 
-        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('anonDevice').child(auth.uid).val() === $deviceId && newData.exists()",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !root.child('blocked').child(auth.uid).exists() && root.child('anonDevice').child(auth.uid).val() === $deviceId && newData.exists()",
 
         ".validate": "newData.hasChildren(['count', 'start']) && ((!data.exists() && newData.child('count').val() === 1 && newData.child('start').val() === now) || (data.exists() && now >= data.child('start').val() + 86400000 && newData.child('count').val() === 1 && newData.child('start').val() === now) || (data.exists() && now < data.child('start').val() + 86400000 && newData.child('start').val() === data.child('start').val() && newData.child('count').val() === data.child('count').val() + 1 && newData.child('count').val() <= 100))",
 
@@ -179,4 +219,4 @@
       }
     }
   }
-}   
+}
