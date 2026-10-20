@@ -1,0 +1,38 @@
+import { LIMITS } from "./config.js";
+import { formatUkuran } from "./utils.js";
+
+// Tambah pembaruan baru di PALING ATAS daftar. `id` harus unik: kalau id teratas
+// berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
+export const NEWS = [
+  {
+    id: "2026-10-20-tema",
+    date: "20 Okt 2026",
+    title: "Mode gelap & menu pembaruan",
+    points: [
+      "Kalau mau ganti mode, klik tombol bulan/matahari, nanti berubah",
+      "Tema default lu bakal ngikutin tema setelan pabrik device lu",
+      "Cek apa yang diupdate melalui tombol Notifikasi",
+    ],
+  },
+  {
+    id: "2026-10-20-reply",
+    date: "20 Okt 2026",
+    title: "Balas pesan lebih rapi",
+    points: [
+      "Kutipan balasan tampil rapi di dalam gelembung pesan.",
+      "Ketuk kutipan untuk lompat ke pesan aslinya.",
+      "Pesan lama yang dibalas ikut dimuat, walau di luar riwayat yang terbuka.",
+    ],
+  },
+  {
+    id: "fitur-dasar",
+    title: "Fitur yang sudah ada",
+    points: [
+      "Ketuk pesan untuk membalas atau menghapus (untuk saya / untuk semua orang).",
+      `Login Google: nama otomatis, centang terverifikasi, dan bisa kirim foto atau file (maks ${formatUkuran(LIMITS.MAX_FILE_BYTES)}).`,
+      `Tamu bisa kirim ${LIMITS.MAX_ANON} pesan per 24 jam. Login Google untuk tanpa batas.`,
+      `Tombol "Muat pesan lama" membuka sampai ${LIMITS.MAX_RIWAYAT} pesan terakhir.`,
+      "Jumlah orang yang sedang online tampil di bawah judul.",
+    ],
+  },
+];

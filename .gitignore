@@ -1,0 +1,9 @@
+node_modules/
+.firebase/
+firebase-debug.log*
+*.log
+.DS_Store
+.env
+.env.*
+.vscode/
+.idea/

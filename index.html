@@ -7,22 +7,19 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0f766e" />
-    <script>
-      // Pasang tema sebelum halaman tampil supaya tidak berkedip
-      (function () {
-        var t = null;
-        try {
-          t = localStorage.getItem("chatTheme");
-        } catch (e) {}
-        if (t !== "dark" && t !== "light") {
-          t = matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        document.documentElement.dataset.theme = t;
-      })();
-    </script>
-    <link rel="stylesheet" href="style.css?v=6" />
+    <script src="assets/js/theme-init.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <meta
+      name="description"
+      content="FitChat: chat global realtime. Ngobrol sebagai tamu tanpa daftar, atau login Google untuk kirim foto/file dan pesan tanpa batas."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FitChat (Fitnah Chat)" />
+    <meta
+      property="og:description"
+      content="Chat global realtime. Masuk sebagai tamu atau login Google."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <title>FitChat (Fitnah Chat)</title>
   </head>
 
@@ -215,6 +212,6 @@
       <img id="lightbox-img" alt="" />
     </div>
 
-    <script type="module" src="script.js?v=6"></script>
+    <script type="module" src="assets/js/main.js"></script>
   </body>
 </html>
