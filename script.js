@@ -171,6 +171,132 @@ function namaGoogle(user) {
 input.maxLength = MAX_TEKS;
 localStorage.removeItem("chatCache"); // cache lama sudah tidak dipakai
 
+// ===== PEMBARUAN ("Yang baru") =====
+// Tambah pembaruan baru di PALING ATAS daftar. `id` harus unik: kalau id teratas
+// berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
+const NEWS = [
+  {
+    id: "2026-10-20-tema",
+    date: "20 Okt 2026",
+    title: "Mode gelap & menu pembaruan",
+    points: [
+      "Kalau mau ganti mode, klik tombol bulan/matahari, nanti berubah",
+      "Tema default lu bakal ngikutin tema setelan pabrik device lu",
+      "Cek apa yang diupdate melalui tombol Notifikasi",
+    ],
+  },
+  {
+    id: "2026-10-20-reply",
+    date: "20 Okt 2026",
+    title: "Balas pesan lebih rapi",
+    points: [
+      "Kutipan balasan tampil rapi di dalam gelembung pesan.",
+      "Ketuk kutipan untuk lompat ke pesan aslinya.",
+      "Pesan lama yang dibalas ikut dimuat, walau di luar riwayat yang terbuka.",
+    ],
+  },
+  {
+    id: "fitur-dasar",
+    title: "Fitur yang sudah ada",
+    points: [
+      "Ketuk pesan untuk membalas atau menghapus (untuk saya / untuk semua orang).",
+      `Login Google: nama otomatis, centang terverifikasi, dan bisa kirim foto atau file (maks ${formatUkuran(MAX_FILE_BYTES)}).`,
+      `Tamu bisa kirim ${MAX_ANON} pesan per 24 jam. Login Google untuk tanpa batas.`,
+      `Tombol "Muat pesan lama" membuka sampai ${MAX_RIWAYAT} pesan terakhir.`,
+      "Jumlah orang yang sedang online tampil di bawah judul.",
+    ],
+  },
+];
+
+const NEWS_KEY = "chatNewsSeen";
+const newsBtn = document.getElementById("news-btn");
+const newsModal = document.getElementById("news");
+const newsList = document.getElementById("news-list");
+const newsClose = document.getElementById("news-close");
+
+function newsTerbaca() {
+  try {
+    return localStorage.getItem(NEWS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function perbaruiTitikNews() {
+  newsBtn.classList.toggle("has-new", newsTerbaca() !== NEWS[0].id);
+}
+
+function renderNews(adaYangBaru) {
+  const frag = document.createDocumentFragment();
+
+  NEWS.forEach((n, i) => {
+    const item = document.createElement("section");
+    item.className = "news-item";
+
+    const head = document.createElement("div");
+    head.className = "news-head";
+
+    const title = document.createElement("h3");
+    title.className = "news-title";
+    title.textContent = n.title;
+    head.appendChild(title);
+
+    if (i === 0 && adaYangBaru) {
+      const tag = document.createElement("span");
+      tag.className = "news-new";
+      tag.textContent = "Baru";
+      head.appendChild(tag);
+    }
+
+    if (n.date) {
+      const date = document.createElement("span");
+      date.className = "news-date";
+      date.textContent = n.date;
+      head.appendChild(date);
+    }
+
+    const ul = document.createElement("ul");
+    ul.className = "news-points";
+    n.points.forEach((p) => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      ul.appendChild(li);
+    });
+
+    item.append(head, ul);
+    frag.appendChild(item);
+  });
+
+  newsList.replaceChildren(frag);
+  newsList.scrollTop = 0;
+}
+
+function bukaNews() {
+  renderNews(newsTerbaca() !== NEWS[0].id);
+  newsModal.hidden = false;
+  try {
+    localStorage.setItem(NEWS_KEY, NEWS[0].id);
+  } catch {}
+  perbaruiTitikNews();
+  newsClose.focus();
+}
+
+function tutupNews() {
+  newsModal.hidden = true;
+  newsBtn.focus();
+}
+
+newsBtn.addEventListener("click", bukaNews);
+newsClose.addEventListener("click", tutupNews);
+newsModal.addEventListener("click", (e) => {
+  if (e.target.dataset.tutupNews !== undefined) tutupNews();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !newsModal.hidden) tutupNews();
+});
+
+perbaruiTitikNews();
+
 // ===== ID PERANGKAT =====
 function buatId() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -1260,7 +1386,7 @@ onAuthStateChanged(auth, (user) => {
     lampiran = null;
     tampilkanPreview();
   }
-  loginBtn.textContent = google ? "Logout" : "Login Google";
+  loginBtn.textContent = google ? "Keluar" : "Login Google";
 
   mulaiListener();
   mulaiPresence(user);

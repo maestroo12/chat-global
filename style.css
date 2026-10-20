@@ -194,7 +194,9 @@ body {
   background: #e6f4f2;
 }
 
+#news-btn,
 #theme-btn {
+  position: relative;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -209,8 +211,22 @@ body {
   transition: background 0.15s;
 }
 
+#news-btn:hover,
 #theme-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* titik merah kalau ada pembaruan yang belum dibaca */
+#news-btn.has-new::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  background: #f87171;
+  border: 2px solid var(--header);
+  border-radius: 50%;
 }
 
 /* bulan tampil di mode terang, matahari di mode gelap */
@@ -848,6 +864,120 @@ button:focus-visible {
   outline-color: var(--accent);
 }
 
+/* ---------- Daftar pembaruan ---------- */
+#news {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.news-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: min(80vh, 560px);
+  max-height: min(80dvh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+}
+
+.news-top {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 8px 8px 16px;
+}
+
+.news-top h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+#news-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#news-close:hover {
+  background: var(--soft);
+}
+
+#news-close:focus-visible {
+  outline-color: var(--accent);
+}
+
+#news-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 16px 16px;
+}
+
+.news-item + .news-item {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.news-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 6px;
+}
+
+.news-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.news-date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.news-new {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--teal);
+  border-radius: 999px;
+}
+
+.news-points {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.news-points li + li {
+  margin-top: 3px;
+}
+
 /* ---------- Gambar penuh ---------- */
 #lightbox {
   position: fixed;
@@ -869,11 +999,13 @@ button:focus-visible {
 
 /* ---------- Layar lebar ---------- */
 @media (min-width: 601px) {
-  #sheet {
+  #sheet,
+  #news {
     align-items: center;
   }
 
-  .sheet-panel {
+  .sheet-panel,
+  .news-panel {
     border-radius: 16px;
   }
 }
