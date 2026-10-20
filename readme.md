@@ -1,6 +1,6 @@
 # FitChat (Fitnah Chat)
 
-Link website: maestroo12.github.io/chat-global/
+Link website: https://maestroo12.github.io/chat-global/
 
 Aplikasi **chat global realtime** berbasis web. Siapa pun bisa langsung ngobrol sebagai **tamu** tanpa daftar, atau **login dengan Google** untuk mendapat centang terverifikasi, kirim foto/file, dan kirim pesan tanpa batas.
 
