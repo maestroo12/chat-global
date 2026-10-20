@@ -72,6 +72,47 @@ const replyPreviewName = document.getElementById("reply-preview-name");
 const replyPreviewText = document.getElementById("reply-preview-text");
 const replyCancel = document.getElementById("reply-cancel");
 
+// ===== TEMA (terang / gelap) =====
+const themeBtn = document.getElementById("theme-btn");
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const THEME_KEY = "chatTheme";
+const gelapQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function temaTersimpan() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === "dark" || t === "light" ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+function terapkanTema(tema) {
+  const gelap = tema === "dark";
+  document.documentElement.dataset.theme = tema;
+  if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
+
+  const label = gelap ? "Ganti ke mode terang" : "Ganti ke mode gelap";
+  themeBtn.setAttribute("aria-label", label);
+  themeBtn.title = label;
+}
+
+themeBtn.addEventListener("click", () => {
+  const baru =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try {
+    localStorage.setItem(THEME_KEY, baru);
+  } catch {}
+  terapkanTema(baru);
+});
+
+// Kalau belum pernah memilih, ikuti setelan perangkat (termasuk saat berubah)
+gelapQuery.addEventListener("change", (e) => {
+  if (!temaTersimpan()) terapkanTema(e.matches ? "dark" : "light");
+});
+
+terapkanTema(temaTersimpan() || (gelapQuery.matches ? "dark" : "light"));
+
 // Wadah daftar pesan + tombol "muat pesan lama"
 const listDiv = document.createElement("div");
 listDiv.id = "list";

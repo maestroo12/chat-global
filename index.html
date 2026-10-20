@@ -7,6 +7,21 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0f766e" />
+    <script>
+      // Pasang tema sebelum halaman tampil supaya tidak berkedip
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("chatTheme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t = matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        }
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <link rel="stylesheet" href="style.css?v=5" />
     <title>FitChat (Fitnah Chat)</title>
   </head>
@@ -18,7 +33,52 @@
           <h1>FitChat (Fitnah Chat)</h1>
           <span id="online-status"><i class="dot"></i>Online</span>
         </div>
-        <button id="login-btn" type="button">Login Google</button>
+        <div id="header-actions">
+          <button
+            id="theme-btn"
+            type="button"
+            aria-label="Ganti ke mode gelap"
+            title="Ganti ke mode gelap"
+          >
+            <svg
+              class="icon-moon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"
+              />
+            </svg>
+            <svg
+              class="icon-sun"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+            >
+              <g
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path
+                  d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                />
+              </g>
+            </svg>
+          </button>
+          <button id="login-btn" type="button">Login Google</button>
+        </div>
       </header>
 
       <main id="messages" aria-live="polite"></main>
