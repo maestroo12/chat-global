@@ -1260,7 +1260,7 @@ onAuthStateChanged(auth, (user) => {
     lampiran = null;
     tampilkanPreview();
   }
-  loginBtn.textContent = google ? "Keluar" : "Login Google";
+  loginBtn.textContent = google ? "Logout" : "Login Google";
 
   mulaiListener();
   mulaiPresence(user);
