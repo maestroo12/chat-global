@@ -2,9 +2,11 @@
 :root {
   color-scheme: light;
 
-  --teal: #0f766e; /* isi tombol, ikon, badge */
+  --teal: #0f766e;
+  /* isi tombol, ikon, badge */
   --teal-dark: #0b5a54;
-  --accent: #0f766e; /* teks & garis aksen */
+  --accent: #0f766e;
+  /* teks & garis aksen */
   --header: #0f766e;
 
   --bg: #e9ecef;
@@ -385,6 +387,31 @@ body {
   vertical-align: 1px;
 }
 
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  border-radius: 4px;
+  vertical-align: 1px;
+}
+
+.status-badge.status-admin {
+  background: #dc2626;
+}
+
+.status-badge.status-user {
+  background: var(--teal);
+}
+
+.status-badge.status-anon {
+  background: #6b7280;
+}
+
 /* ---------- Kutipan balasan di dalam bubble ---------- */
 .reply-quote {
   grid-column: 1 / -1;
@@ -443,6 +470,7 @@ body {
 }
 
 @keyframes reply-flash {
+
   0%,
   40% {
     background: var(--flash);
@@ -555,7 +583,8 @@ body {
 #input-area input {
   min-width: 0;
   font: inherit;
-  font-size: 16px; /* cegah auto-zoom di iOS */
+  font-size: 16px;
+  /* cegah auto-zoom di iOS */
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -570,10 +599,22 @@ body {
   box-shadow: 0 0 0 3px var(--tint-me);
 }
 
+.name-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 #input-area #user-name {
   width: 100%;
   padding: 8px 14px;
   border-radius: 999px;
+}
+
+#name-limit-info {
+  font-size: 11px;
+  color: var(--muted);
+  padding-left: 4px;
 }
 
 #message-input {
@@ -933,7 +974,7 @@ button:focus-visible {
   padding: 4px 16px 16px;
 }
 
-.news-item + .news-item {
+.news-item+.news-item {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -974,7 +1015,7 @@ button:focus-visible {
   line-height: 1.5;
 }
 
-.news-points li + li {
+.news-points li+li {
   margin-top: 3px;
 }
 
@@ -999,6 +1040,7 @@ button:focus-visible {
 
 /* ---------- Layar lebar ---------- */
 @media (min-width: 601px) {
+
   #sheet,
   #news {
     align-items: center;
@@ -1134,7 +1176,7 @@ button:focus-visible {
   padding: 4px 16px 16px;
 }
 
-.admin-section + .admin-section {
+.admin-section+.admin-section {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);

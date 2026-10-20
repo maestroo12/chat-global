@@ -96,7 +96,7 @@ themeBtn.addEventListener("click", () => {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch {}
+  } catch { }
   terapkanTema(baru);
 });
 
@@ -120,6 +120,7 @@ messagesDiv.replaceChildren(olderBtn, listDiv);
 // ===== KONSTANTA =====
 const {
   MAX_ANON,
+  MAX_ANON_NAME_CHANGES,
   DAY_MS,
   MAX_RIWAYAT,
   HALAMAN,
@@ -247,7 +248,7 @@ function bukaNews() {
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch {}
+  } catch { }
   perbaruiTitikNews();
   newsClose.focus();
 }
@@ -305,8 +306,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-      messagesDiv.scrollTop -
-      messagesDiv.clientHeight <
+    messagesDiv.scrollTop -
+    messagesDiv.clientHeight <
     160
   );
 }
@@ -600,6 +601,28 @@ function buatElemen(key, data) {
     name.classList.add("msg-name");
     name.textContent = data.name;
 
+    // Status badge: admin, user, atau anonymous
+    const statusBadge = document.createElement("span");
+    statusBadge.classList.add("status-badge");
+
+    if (data.verified) {
+      // Cek apakah admin (berdasarkan daftar admin di database)
+      if (admin.isAdmin && admin.isAdmin(data.uid)) {
+        statusBadge.classList.add("status-admin");
+        statusBadge.textContent = "Admin";
+        statusBadge.title = "Administrator";
+      } else {
+        statusBadge.classList.add("status-user");
+        statusBadge.textContent = "User";
+        statusBadge.title = "Akun Google terverifikasi";
+      }
+    } else {
+      statusBadge.classList.add("status-anon");
+      statusBadge.textContent = "Anon";
+      statusBadge.title = "Pengguna tamu";
+    }
+    name.appendChild(statusBadge);
+
     // Centang hanya untuk pesan dari akun Google (divalidasi oleh Database Rules)
     if (data.verified) {
       const badge = document.createElement("span");
@@ -762,7 +785,7 @@ function mulaiListener() {
       hasMore = s.size >= HALAMAN;
       perbaruiTombolLama();
     })
-    .catch(() => {});
+    .catch(() => { });
 
   onValue(usersRef, (snapshot) => {
     const data = snapshot.val();
@@ -1105,6 +1128,8 @@ fileInput.addEventListener("change", async () => {
 // ===== LIMIT TAMU (per perangkat, 24 jam) =====
 let devicePromise = null;
 let deviceUid = null;
+let nameChangeData = null; // { count, start } untuk perubahan nama
+let stopPantauNameChange = null;
 
 async function daftarkanPerangkat(user) {
   // Hubungkan akun anonim ini ke ID perangkat. Hanya bisa ditulis sekali per akun anonim.
@@ -1230,6 +1255,73 @@ async function tambahkanLimitTamu(updates) {
   return true;
 }
 
+// ===== LIMIT PERUBAHAN NAMA TAMU (per perangkat, 24 jam) =====
+function statusLimitNama() {
+  const now = Date.now() + serverOffset;
+  if (!nameChangeData || now - nameChangeData.start >= DAY_MS) {
+    return { sisa: MAX_ANON_NAME_CHANGES };
+  }
+  return {
+    sisa: MAX_ANON_NAME_CHANGES - nameChangeData.count,
+    bukaLagi: nameChangeData.start + DAY_MS - now,
+  };
+}
+
+function pantauNamaChange(user) {
+  if (stopPantauNameChange) stopPantauNameChange();
+  stopPantauNameChange = null;
+  nameChangeData = null;
+
+  if (isGoogle(user)) return;
+
+  pastikanPerangkat(user)
+    .then((dev) => {
+      if (currentUser?.uid !== user.uid) return;
+      stopPantauNameChange = onValue(ref(db, `deviceNameLimit/${dev}`), (snap) => {
+        nameChangeData = snap.val();
+        terapkanLimitNama();
+      });
+    })
+    .catch((err) => {
+      console.error("Gagal menyiapkan limit nama:", err);
+    });
+}
+
+function terapkanLimitNama() {
+  if (isGoogle(currentUser)) return;
+  const st = statusLimitNama();
+  const info = document.getElementById("name-limit-info");
+  if (info) {
+    if (st.sisa <= 0) {
+      const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
+      info.textContent = ` (Batas ganti nama habis. Coba lagi ${jam} jam lagi)`;
+      info.style.color = "#ef4444";
+    } else {
+      info.textContent = ` (${st.sisa}/${MAX_ANON_NAME_CHANGES} hari ini)`;
+      info.style.color = "#6b7280";
+    }
+  }
+}
+
+async function tambahkanLimitNamaChange(updates) {
+  const dev = await pastikanPerangkat(currentUser);
+  const path = `deviceNameLimit/${dev}`;
+  const snap = await get(ref(db, path));
+  const lim = snap.val();
+  const now = Date.now() + serverOffset;
+
+  if (!lim || now - lim.start >= DAY_MS) {
+    updates[path] = { count: 1, start: serverTimestamp() };
+  } else if (lim.count >= MAX_ANON_NAME_CHANGES) {
+    nameChangeData = lim;
+    terapkanLimitNama();
+    return false;
+  } else {
+    updates[path] = { count: lim.count + 1, start: lim.start };
+  }
+  return true;
+}
+
 // ===== KIRIM PESAN =====
 async function kirimPesan() {
   if (sedangKirim || !currentUser || diblokir) return;
@@ -1332,9 +1424,37 @@ input.addEventListener("keydown", (e) => {
 });
 
 // ===== NAMA (hanya untuk tamu) =====
-nameInput.addEventListener("change", () => {
+let namaLama = null;
+
+nameInput.addEventListener("change", async () => {
   if (!isGoogle(currentUser)) {
-    simpan.tulis("chatName", nameInput.value.trim());
+    const namaBaru = nameInput.value.trim();
+    if (namaBaru === namaLama) return;
+
+    const st = statusLimitNama();
+    if (st.sisa <= 0) {
+      alert("Batas ganti nama habis untuk hari ini. Coba lagi besok atau login Google.");
+      nameInput.value = namaLama || "";
+      return;
+    }
+
+    if (namaBaru) {
+      try {
+        const updates = {};
+        if (!(await tambahkanLimitNamaChange(updates))) {
+          alert("Batas ganti nama habis untuk hari ini.");
+          nameInput.value = namaLama || "";
+          return;
+        }
+        await update(ref(db), updates);
+        simpan.tulis("chatName", namaBaru);
+        namaLama = namaBaru;
+      } catch (err) {
+        console.error("Gagal mengganti nama:", err);
+        alert("Gagal mengganti nama: " + (err.code || err.message));
+        nameInput.value = namaLama || "";
+      }
+    }
   }
 });
 
@@ -1395,7 +1515,8 @@ onAuthStateChanged(auth, (user) => {
   nameInput.hidden = google;
   attachBtn.hidden = !google;
   if (!google) {
-    nameInput.value = simpan.baca("chatName") || "";
+    namaLama = simpan.baca("chatName") || "";
+    nameInput.value = namaLama;
     lampiran = null;
     tampilkanPreview();
   }
@@ -1405,6 +1526,7 @@ onAuthStateChanged(auth, (user) => {
   mulaiPresence(user);
   admin.setUser(user);
   pantauSisa(user);
+  pantauNamaChange(user);
   pantauHidden(user);
   renderSemua();
 });

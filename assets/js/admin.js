@@ -112,11 +112,11 @@ export function initAdmin({ db, onDiblokir }) {
     for (const [uid, b] of daftar) {
       const sub = b?.at
         ? "Sejak " +
-          new Date(b.at).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })
+        new Date(b.at).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
         : `ID ${uid.slice(0, 6)}`;
       frag.appendChild(
         buatBaris(
@@ -253,6 +253,13 @@ export function initAdmin({ db, onDiblokir }) {
             },
             (err) => console.error("Gagal membaca daftar user:", err),
           ),
+          onValue(
+            ref(db, "admins"),
+            (s) => {
+              setAdminData(s.val() || {});
+            },
+            (err) => console.error("Gagal membaca daftar admin:", err),
+          ),
         );
         timer = setInterval(() => {
           if (!panel.hidden) renderOnline();
@@ -263,10 +270,23 @@ export function initAdmin({ db, onDiblokir }) {
       );
   }
 
+  let adminData = {};
+
+  // ===== Fungsi tambahan untuk cek status admin =====
+  function isAdmin(uid) {
+    return !!adminData[uid];
+  }
+
+  function setAdminData(data) {
+    adminData = data || {};
+  }
+
   return {
     setUser,
     aktif: () => aktif,
     sudahDiblokir: (uid) => !!bannedData[uid],
+    isAdmin,
+    setAdminData,
     hapusPesan,
     blokir,
   };

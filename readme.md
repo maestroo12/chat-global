@@ -11,8 +11,9 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 ## Fitur
 
 - **Chat realtime** untuk semua pengguna dalam satu ruang global.
-- **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama.
+- **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama. Batas ganti nama 5x per hari.
 - **Login Google**: nama otomatis, centang terverifikasi, kirim foto/file, tanpa batas pesan.
+- **Status badge**: menampilkan status pengguna (Admin/User/Anon) di samping nama.
 - **Balas pesan** dengan kutipan di dalam gelembung. Ketuk kutipan untuk lompat ke pesan aslinya.
 - **Hapus pesan**: "Hapus untuk saya" (hanya hilang di layarmu) atau "Hapus untuk semua orang" (isi pesan dihapus, tersisa keterangan "Pesan ini telah dihapus").
 - **Kirim foto dan file** (khusus akun Google). Foto dikecilkan otomatis di browser sebelum dikirim, dan bisa dibuka dalam tampilan penuh (lightbox).
@@ -40,7 +41,8 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 | Kirim pesan teks      | Ya, dibatasi per 24 jam           | Ya, tanpa batas           |
 | Kirim foto/file       | Tidak                             | Ya                        |
 | Centang terverifikasi | Tidak                             | Ya                        |
-| Nama                  | Diisi sendiri (maks. 24 karakter) | Otomatis dari akun Google |
+| Nama                  | Diisi sendiri (maks. 24 karakter, ganti max 5x/hari) | Otomatis dari akun Google |
+| Status badge          | Anon                              | User                      |
 
 ## Batas aplikasi
 
@@ -50,12 +52,13 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | --------------------------------- | ----------------- |
 | Panjang pesan teks                | 500 karakter      |
 | Pesan tamu per 24 jam             | 30 pesan          |
+| Ganti nama tamu per 24 jam        | 5 kali            |
 | Ukuran foto (dikecilkan otomatis) | di bawah 350 KB   |
 | Ukuran file biasa                 | 500 KB            |
 | Riwayat pesan yang bisa dibuka    | 100 pesan terbaru |
 | Pesan per muatan                  | 50 pesan          |
 
-> **Catatan:** `database.rules.json` memakai plafon yang lebih longgar sebagai pengaman terakhir (maks. 100 pesan tamu per 24 jam, file 512000 byte). Jika mengubah angka di `config.js`, sesuaikan juga aturan terkait di `database.rules.json`.
+> **Catatan:** `database.rules.json` memakai plafon yang lebih longgar sebagai pengaman terakhir (maks. 30 pesan tamu per 24 jam, 5 ganti nama tamu per 24 jam, file 512000 byte). Jika mengubah angka di `config.js`, sesuaikan juga aturan terkait di `database.rules.json`.
 
 ## Teknologi
 
@@ -100,6 +103,7 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | `hidden/{uid}/{messageId}` | Pesan yang disembunyikan ("Hapus untuk saya")                                           | Hanya pemilik                                  |
 | `anonDevice/{uid}`         | Pemetaan akun tamu ke ID perangkat                                                      | Hanya pemilik                                  |
 | `deviceLimit/{deviceId}`   | Penghitung pesan tamu (`count`, `start`)                                                | Hanya perangkat terkait                        |
+| `deviceNameLimit/{deviceId}` | Penghitung ganti nama tamu (`count`, `start`)                                           | Hanya perangkat terkait                        |
 
 Aturan di `database.rules.json` memvalidasi tipe dan panjang setiap field, memastikan `uid` sesuai pengirim, hanya mengizinkan pesan dihapus oleh pengirimnya sendiri, dan mencegah tamu mengirim file atau mengklaim status terverifikasi.
 
