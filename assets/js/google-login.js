@@ -68,11 +68,17 @@ export async function mintaIdTokenGoogle(clientId) {
     });
     window.google.accounts.id.renderButton(
       overlay.querySelector(".gl-tombol"),
-      { type: "standard", theme: "outline", size: "large", shape: "pill", text: "signin_with", width: 260 },
+      {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "signin_with",
+        width: 260,
+      },
     );
   });
 }
-
 
 // ===== Alur REDIRECT (untuk HP) =====
 // Popup GIS sering menghasilkan "400. That's an error" di browser HP (Brave,
@@ -99,8 +105,12 @@ function acak(panjang = 32) {
 
 function simpanSementara(nilai) {
   const j = JSON.stringify(nilai);
-  try { sessionStorage.setItem(KUNCI_LOGIN, j); } catch {}
-  try { localStorage.setItem(KUNCI_LOGIN, j); } catch {}
+  try {
+    sessionStorage.setItem(KUNCI_LOGIN, j);
+  } catch {}
+  try {
+    localStorage.setItem(KUNCI_LOGIN, j);
+  } catch {}
 }
 
 function bacaSementara() {
@@ -114,8 +124,12 @@ function bacaSementara() {
 }
 
 function hapusSementara() {
-  try { sessionStorage.removeItem(KUNCI_LOGIN); } catch {}
-  try { localStorage.removeItem(KUNCI_LOGIN); } catch {}
+  try {
+    sessionStorage.removeItem(KUNCI_LOGIN);
+  } catch {}
+  try {
+    localStorage.removeItem(KUNCI_LOGIN);
+  } catch {}
 }
 
 // Pindah ke halaman login Google (halaman ini akan ditinggalkan).
@@ -150,12 +164,20 @@ export function ambilHasilRedirectGoogle() {
   hapusSementara();
 
   // Bersihkan token dari alamat & riwayat, kembali ke panel sebelumnya
-  history.replaceState(null, "", location.pathname + location.search + (tersimpan?.kembali || "#/chat"));
+  history.replaceState(
+    null,
+    "",
+    location.pathname + location.search + (tersimpan?.kembali || "#/chat"),
+  );
 
   if (params.get("error")) {
     return { error: params.get("error") };
   }
-  if (!tersimpan || !params.get("state") || params.get("state") !== tersimpan.state) {
+  if (
+    !tersimpan ||
+    !params.get("state") ||
+    params.get("state") !== tersimpan.state
+  ) {
     return { error: "state-tidak-cocok" };
   }
   return { idToken: params.get("id_token"), nonce: tersimpan.nonce };

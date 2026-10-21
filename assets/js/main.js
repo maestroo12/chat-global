@@ -66,7 +66,9 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
 
 // Balik dari halaman login Google di HP (alur redirect GIS): ambil token dari
 // alamat SEKARANG, sebelum router panel jalan. Ditukar jadi sesi Firebase di bawah.
-const hasilRedirectGoogle = HOSTED_ON_FIREBASE ? null : ambilHasilRedirectGoogle();
+const hasilRedirectGoogle = HOSTED_ON_FIREBASE
+  ? null
+  : ambilHasilRedirectGoogle();
 let loginRedirectBerjalan = !!hasilRedirectGoogle?.idToken;
 
 async function masukDenganIdToken({ idToken, nonce }) {
@@ -88,6 +90,24 @@ async function masukDenganIdToken({ idToken, nonce }) {
 
 if (hasilRedirectGoogle?.error) {
   alert("Login Google gagal: " + hasilRedirectGoogle.error);
+}
+
+// Tukar token Google jadi sesi Firebase. Dijalankan langsung saat halaman dimuat
+// (bukan menunggu "belum ada user"), karena pengunjung yang sebelumnya tamu
+// sudah punya sesi anonim dan akan tetap jadi tamu kalau token ini diabaikan.
+if (hasilRedirectGoogle?.idToken) {
+  auth
+    .authStateReady()
+    .then(() => masukDenganIdToken(hasilRedirectGoogle))
+    .catch((err) => {
+      console.error("Login Google gagal:", err);
+      alert("Login gagal: " + (err.code || err.message));
+    })
+    .finally(() => {
+      loginRedirectBerjalan = false;
+      // Kalau gagal dan tidak ada sesi sama sekali, masuk sebagai tamu lagi
+      if (!auth.currentUser) signInAnonymously(auth).catch(() => {});
+    });
 }
 
 // Setelah balik dari halaman login Google (alur redirect), tangkap hasil/errornya
@@ -140,7 +160,6 @@ function terapkanTema(tema) {
   const gelap = tema === "dark";
   document.documentElement.dataset.theme = tema;
   if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
-
 }
 
 function gantiTema() {
@@ -148,7 +167,7 @@ function gantiTema() {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch { }
+  } catch {}
   terapkanTema(baru);
 }
 
@@ -341,7 +360,7 @@ function bukaNews(pembuka = pembukaNews) {
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch { }
+  } catch {}
   perbaruiTitikNews();
   newsClose.focus();
 }
@@ -391,9 +410,16 @@ function normalisasiIp(ip) {
   const [kiri, kanan] = ip.split("::");
   const a = kiri ? kiri.split(":") : [];
   const b = kanan !== undefined && kanan ? kanan.split(":") : [];
-  const tengah = kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
+  const tengah =
+    kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
   const penuh = [...a, ...tengah, ...b].slice(0, 8);
-  return "v6:" + penuh.slice(0, 4).map((g) => g.padStart(4, "0")).join(":");
+  return (
+    "v6:" +
+    penuh
+      .slice(0, 4)
+      .map((g) => g.padStart(4, "0"))
+      .join(":")
+  );
 }
 
 async function ambilIpMentah() {
@@ -421,9 +447,13 @@ function ambilIpId() {
     ipIdPromise = (async () => {
       const ip = await ambilIpMentah();
       if (!ip || !crypto?.subtle) return null;
-      const bytes = new TextEncoder().encode("fitchat-ganti-nama:" + normalisasiIp(ip));
+      const bytes = new TextEncoder().encode(
+        "fitchat-ganti-nama:" + normalisasiIp(ip),
+      );
       const hash = await crypto.subtle.digest("SHA-256", bytes);
-      return Array.from(new Uint8Array(hash), (x) => x.toString(16).padStart(2, "0")).join("");
+      return Array.from(new Uint8Array(hash), (x) =>
+        x.toString(16).padStart(2, "0"),
+      ).join("");
     })().then((id) => {
       if (!id) ipIdPromise = null; // gagal: boleh dicoba lagi nanti
       return id;
@@ -456,8 +486,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-    messagesDiv.scrollTop -
-    messagesDiv.clientHeight <
+      messagesDiv.scrollTop -
+      messagesDiv.clientHeight <
     160
   );
 }
@@ -1679,7 +1709,10 @@ async function siapkanKunciNama(user) {
       await set(ref(db, `anonIp/${user.uid}`), ipId);
       return { path: `ipNameLimit/${ipId}`, ip: true };
     } catch (err) {
-      console.warn("Gagal mendaftarkan IP, pakai ID perangkat:", err.code || err.message);
+      console.warn(
+        "Gagal mendaftarkan IP, pakai ID perangkat:",
+        err.code || err.message,
+      );
     }
   }
   const dev = await pastikanPerangkat(user);
@@ -2250,19 +2283,7 @@ let uidChat = null; // uid yang sedang dipakai untuk listener chat
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     admin.setUser(null);
-    if (loginRedirectBerjalan) {
-      // Sedang menukar token Google jadi sesi Firebase; jangan masuk anonim dulu
-      masukDenganIdToken(hasilRedirectGoogle)
-        .catch((err) => {
-          console.error("Login Google gagal:", err);
-          alert("Login gagal: " + (err.code || err.message));
-          return signInAnonymously(auth);
-        })
-        .finally(() => {
-          loginRedirectBerjalan = false;
-        });
-      return;
-    }
+    if (loginRedirectBerjalan) return; // token Google sedang ditukar; jangan masuk anonim dulu
     signInAnonymously(auth).catch((err) => {
       console.error("Anonymous gagal:", err);
       input.placeholder =
