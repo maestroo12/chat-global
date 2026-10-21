@@ -3,7 +3,13 @@
 // Di Google Cloud Console, batasi API key ke domain situs kamu (HTTP referrer).
 export const firebaseConfig = {
   apiKey: "AIzaSyDQYSoIuyWfHJYCMU8B0HAKFOkshiGCrXw",
-  authDomain: "chat-globall.firebaseapp.com",
+  // Harus SAMA dengan domain tempat situs dibuka. Kalau beda, browser HP
+  // (Brave, Safari, Chrome terbaru) memblokir storage lintas-domain dan login
+  // gagal dengan "missing initial state". Firebase Hosting otomatis menyediakan
+  // /__/auth/handler di setiap domainnya. Di localhost pakai domain bawaan.
+  authDomain: ["localhost", "127.0.0.1"].includes(location.hostname)
+    ? "chat-globall.firebaseapp.com"
+    : location.hostname,
   databaseURL:
     "https://chat-globall-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "chat-globall",
