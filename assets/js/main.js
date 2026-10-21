@@ -52,7 +52,6 @@ const input = document.getElementById("message-input");
 const nameInput = document.getElementById("user-name");
 const sendBtn = document.getElementById("send-btn");
 const onlineStatus = document.getElementById("online-status");
-const loginBtn = document.getElementById("login-btn");
 const attachBtn = document.getElementById("attach-btn");
 const fileInput = document.getElementById("file-input");
 const attachPreview = document.getElementById("attach-preview");
@@ -72,7 +71,6 @@ const replyPreviewText = document.getElementById("reply-preview-text");
 const replyCancel = document.getElementById("reply-cancel");
 
 // ===== TEMA (terang / gelap) =====
-const themeBtn = document.getElementById("theme-btn");
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const THEME_KEY = "chatTheme";
 const gelapQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -91,12 +89,6 @@ function terapkanTema(tema) {
   document.documentElement.dataset.theme = tema;
   if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
 
-  // Tombol tema ada di header chat dan di bilah Beranda
-  const label = gelap ? "Ganti ke mode terang" : "Ganti ke mode gelap";
-  document.querySelectorAll('[data-aksi="tema"]').forEach((b) => {
-    b.setAttribute("aria-label", label);
-    b.title = label;
-  });
 }
 
 function gantiTema() {
@@ -107,10 +99,6 @@ function gantiTema() {
   } catch { }
   terapkanTema(baru);
 }
-
-document
-  .querySelectorAll('[data-aksi="tema"]')
-  .forEach((b) => b.addEventListener("click", gantiTema));
 
 // Kalau belum pernah memilih, ikuti setelan perangkat (termasuk saat berubah)
 gelapQuery.addEventListener("change", (e) => {
@@ -228,7 +216,6 @@ simpan.hapus("chatCache"); // cache lama sudah tidak dipakai
 // ===== PEMBARUAN ("Yang baru") =====
 // Daftar pembaruan ada di news.js
 const NEWS_KEY = "chatNewsSeen";
-const newsBtn = document.getElementById("news-btn");
 const newsModal = document.getElementById("news");
 const newsList = document.getElementById("news-list");
 const newsClose = document.getElementById("news-close");
@@ -294,9 +281,9 @@ function renderNews(adaYangBaru) {
   newsList.scrollTop = 0;
 }
 
-let pembukaNews = newsBtn; // tombol yang membuka daftar, untuk mengembalikan fokus
+let pembukaNews = document.querySelector('[data-aksi="news"]'); // tombol yang membuka daftar, untuk mengembalikan fokus
 
-function bukaNews(pembuka = newsBtn) {
+function bukaNews(pembuka = pembukaNews) {
   pembukaNews = pembuka;
   renderNews(newsTerbaca() !== NEWS[0].id);
   newsModal.hidden = false;
@@ -2042,7 +2029,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 // ===== LOGIN / LOGOUT GOOGLE =====
-loginBtn.addEventListener("click", async () => {
+async function masukKeluar() {
   try {
     if (isGoogle(currentUser)) {
       await signOut(auth); // otomatis kembali jadi tamu
@@ -2056,7 +2043,7 @@ loginBtn.addEventListener("click", async () => {
       alert("Login gagal: " + err.code);
     }
   }
-});
+}
 
 // ===== PANEL: Beranda, Chat, Profil =====
 // Data untuk panel diambil dari state di atas. Panelnya sendiri ada di
@@ -2164,7 +2151,7 @@ const beranda = initBeranda({
   limit: infoLimit,
   news: () => NEWS[0],
   bukaNews,
-  login: () => loginBtn.click(),
+  login: masukKeluar,
 });
 
 const profil = initProfil({
@@ -2177,8 +2164,8 @@ const profil = initProfil({
   status: statusAkun,
   limit: infoLimit,
   simpanNama: simpanNamaTampilan,
-  gantiTema: () => themeBtn.click(),
-  login: () => loginBtn.click(),
+  gantiTema,
+  login: masukKeluar,
   bukaAdmin: () => document.getElementById("admin-btn").click(),
 });
 
@@ -2222,7 +2209,6 @@ onAuthStateChanged(auth, (user) => {
     lampiran = null;
     tampilkanPreview();
   }
-  loginBtn.textContent = google ? "Keluar" : "Login Google";
 
   // Akun berganti (login/logout): pasang ulang listener & muat riwayat dari awal,
   // karena listener lama diputus Firebase saat izin bacanya hilang.

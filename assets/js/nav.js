@@ -66,6 +66,23 @@ export function initNav({ onPindah } = {}) {
   }
   tampil(mula);
 
+  // Deteksi keyboard layar (HP): tinggi area tampil mengecil drastis. Saat itu
+  // menu bawah disembunyikan lewat class "keyboard" di <html>.
+  let tinggiMax = 0;
+  let lebarTerakhir = 0;
+  function cekKeyboard() {
+    const h = window.visualViewport?.height || window.innerHeight;
+    if (window.innerWidth !== lebarTerakhir) {
+      lebarTerakhir = window.innerWidth; // rotasi layar: hitung ulang
+      tinggiMax = 0;
+    }
+    tinggiMax = Math.max(tinggiMax, h);
+    document.documentElement.classList.toggle("keyboard", h < tinggiMax * 0.75);
+  }
+  window.addEventListener("resize", cekKeyboard);
+  window.visualViewport?.addEventListener("resize", cekKeyboard);
+  cekKeyboard();
+
   // Angka kecil di tombol menu (mis. pesan chat yang belum dibaca)
   function setBadge(id, n) {
     document.querySelectorAll(`[data-badge="${id}"]`).forEach((b) => {

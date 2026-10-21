@@ -236,18 +236,6 @@
   border-radius: 50%;
 }
 
-.bar-tema .icon-sun {
-  display: none;
-}
-
-:root[data-theme="dark"] .bar-tema .icon-sun {
-  display: block;
-}
-
-:root[data-theme="dark"] .bar-tema .icon-moon {
-  display: none;
-}
-
 /* ---------- Isi panel ---------- */
 .panel-body {
   flex: 1;
@@ -950,6 +938,11 @@
 
   .nav-brand,
   .nav-akun {
+    display: none;
+  }
+
+  /* Keyboard HP terbuka: sembunyikan menu bawah supaya kolom ketik tidak terdorong tinggi */
+  html.keyboard #nav {
     display: none;
   }
 
