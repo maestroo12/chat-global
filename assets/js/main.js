@@ -97,7 +97,7 @@ themeBtn.addEventListener("click", () => {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch { }
+  } catch {}
   terapkanTema(baru);
 });
 
@@ -275,7 +275,7 @@ function bukaNews() {
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch { }
+  } catch {}
   perbaruiTitikNews();
   newsClose.focus();
 }
@@ -323,9 +323,16 @@ function normalisasiIp(ip) {
   const [kiri, kanan] = ip.split("::");
   const a = kiri ? kiri.split(":") : [];
   const b = kanan !== undefined && kanan ? kanan.split(":") : [];
-  const tengah = kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
+  const tengah =
+    kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
   const penuh = [...a, ...tengah, ...b].slice(0, 8);
-  return "v6:" + penuh.slice(0, 4).map((g) => g.padStart(4, "0")).join(":");
+  return (
+    "v6:" +
+    penuh
+      .slice(0, 4)
+      .map((g) => g.padStart(4, "0"))
+      .join(":")
+  );
 }
 
 async function ambilIpMentah() {
@@ -353,9 +360,13 @@ function ambilIpId() {
     ipIdPromise = (async () => {
       const ip = await ambilIpMentah();
       if (!ip || !crypto?.subtle) return null;
-      const bytes = new TextEncoder().encode("fitchat-ganti-nama:" + normalisasiIp(ip));
+      const bytes = new TextEncoder().encode(
+        "fitchat-ganti-nama:" + normalisasiIp(ip),
+      );
       const hash = await crypto.subtle.digest("SHA-256", bytes);
-      return Array.from(new Uint8Array(hash), (x) => x.toString(16).padStart(2, "0")).join("");
+      return Array.from(new Uint8Array(hash), (x) =>
+        x.toString(16).padStart(2, "0"),
+      ).join("");
     })().then((id) => {
       if (!id) ipIdPromise = null; // gagal: boleh dicoba lagi nanti
       return id;
@@ -388,8 +399,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-    messagesDiv.scrollTop -
-    messagesDiv.clientHeight <
+      messagesDiv.scrollTop -
+      messagesDiv.clientHeight <
     160
   );
 }
@@ -674,7 +685,7 @@ function terapkanStatus(el, uid, verified) {
 
   if (!verified) {
     el.classList.add("status-anon");
-    el.textContent = "Anon";
+    el.textContent = "Orang Asing";
     el.title = "Pengguna tamu";
     return;
   }
@@ -864,6 +875,10 @@ function terimaBaru(key, data) {
     return;
   }
   pesan.set(key, data);
+  if (data?.uid && data.uid !== currentUser?.uid && key > balasLainMaks) {
+    balasLainMaks = key;
+    perbaruiCentang();
+  }
   const terakhir = keys[keys.length - 1];
   keys.push(key);
   if (!terakhir || key > terakhir) {
@@ -887,12 +902,16 @@ const ONLINE_MS = 90000; // dianggap online kalau lastSeen kurang dari ini
 let dataUsers = {}; // salinan terakhir dari users/ (dipakai juga untuk hitung online)
 let lainOnline = 0; // jumlah pengguna LAIN yang sedang online
 let bacaMaks = ""; // key pesan terbaru yang sudah dibaca pengguna lain
+let balasLainMaks = ""; // key pesan terbaru yang DIKIRIM pengguna lain (pasti sudah baca pesan sebelumnya)
 let tandaiTerakhir = ""; // key terakhir yang sudah kita catat sebagai dibaca
 let bacaDitolak = false; // rules belum mengizinkan: jangan terus mencoba
 let tandaiTimer = null;
 
 function statusCentang(key) {
-  if (bacaMaks && key <= bacaMaks) return "read";
+  // Dibaca kalau ada catatan baca ATAU orang lain sudah mengirim pesan setelahnya
+  // (catatan reads/{uid} bisa tertinggal, mis. karena refresh/tab ditutup)
+  const batas = bacaMaks > balasLainMaks ? bacaMaks : balasLainMaks;
+  if (batas && key <= batas) return "read";
   return lainOnline > 0 ? "delivered" : "sent";
 }
 
@@ -1015,6 +1034,7 @@ function resetRiwayat() {
   dataUsers = {};
   lainOnline = 0;
   bacaMaks = "";
+  balasLainMaks = "";
   tandaiTerakhir = "";
   bacaDitolak = false;
   listDiv.replaceChildren();
@@ -1581,7 +1601,10 @@ async function siapkanKunciNama(user) {
       await set(ref(db, `anonIp/${user.uid}`), ipId);
       return { path: `ipNameLimit/${ipId}`, ip: true };
     } catch (err) {
-      console.warn("Gagal mendaftarkan IP, pakai ID perangkat:", err.code || err.message);
+      console.warn(
+        "Gagal mendaftarkan IP, pakai ID perangkat:",
+        err.code || err.message,
+      );
     }
   }
   const dev = await pastikanPerangkat(user);
