@@ -72,3 +72,91 @@ export async function mintaIdTokenGoogle(clientId) {
     );
   });
 }
+
+
+// ===== Alur REDIRECT (untuk HP) =====
+// Popup GIS sering menghasilkan "400. That's an error" di browser HP (Brave,
+// Chrome, dll). Solusinya: pindah ke halaman login Google satu tab penuh, lalu
+// Google mengembalikan ID token lewat bagian # di alamat (implicit flow).
+// Tidak ada popup, iframe, atau cookie pihak ketiga yang bisa diblokir.
+//
+// PENTING: alamat balik (redirect URI) harus didaftarkan di Google Cloud
+// Console -> APIs & Services -> Credentials -> Web client -> Authorized
+// redirect URIs. Lihat alamatnya dengan alamatBalikGoogle().
+
+const KUNCI_LOGIN = "gl_login_state";
+
+export function alamatBalikGoogle() {
+  // Contoh: https://maestroo12.github.io/chat-global/
+  return location.origin + location.pathname.replace(/index\.html$/, "");
+}
+
+function acak(panjang = 32) {
+  const b = new Uint8Array(panjang);
+  crypto.getRandomValues(b);
+  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+function simpanSementara(nilai) {
+  const j = JSON.stringify(nilai);
+  try { sessionStorage.setItem(KUNCI_LOGIN, j); } catch {}
+  try { localStorage.setItem(KUNCI_LOGIN, j); } catch {}
+}
+
+function bacaSementara() {
+  for (const st of [() => sessionStorage, () => localStorage]) {
+    try {
+      const v = st().getItem(KUNCI_LOGIN);
+      if (v) return JSON.parse(v);
+    } catch {}
+  }
+  return null;
+}
+
+function hapusSementara() {
+  try { sessionStorage.removeItem(KUNCI_LOGIN); } catch {}
+  try { localStorage.removeItem(KUNCI_LOGIN); } catch {}
+}
+
+// Pindah ke halaman login Google (halaman ini akan ditinggalkan).
+export function mulaiLoginRedirectGoogle(clientId) {
+  const nonce = acak();
+  const state = acak(16);
+  // Setelah login, kembali ke panel yang sedang dibuka (default: chat)
+  const kembali = /^#\/[\w-]+$/.test(location.hash) ? location.hash : "#/chat";
+  simpanSementara({ nonce, state, kembali, waktu: Date.now() });
+
+  const q = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: alamatBalikGoogle(),
+    response_type: "id_token",
+    scope: "openid email profile",
+    nonce,
+    state,
+    prompt: "select_account",
+  });
+  location.assign("https://accounts.google.com/o/oauth2/v2/auth?" + q);
+}
+
+// Dipanggil SEKALI saat halaman dimuat, sebelum router (nav.js) jalan.
+// Kalau halaman ini baru kembali dari Google, ambil token/errornya dari # lalu
+// bersihkan alamat. Mengembalikan null kalau bukan hasil login Google.
+export function ambilHasilRedirectGoogle() {
+  const h = location.hash;
+  if (!/^#(.*&)?(id_token|error)=/.test(h)) return null;
+
+  const params = new URLSearchParams(h.slice(1));
+  const tersimpan = bacaSementara();
+  hapusSementara();
+
+  // Bersihkan token dari alamat & riwayat, kembali ke panel sebelumnya
+  history.replaceState(null, "", location.pathname + location.search + (tersimpan?.kembali || "#/chat"));
+
+  if (params.get("error")) {
+    return { error: params.get("error") };
+  }
+  if (!tersimpan || !params.get("state") || params.get("state") !== tersimpan.state) {
+    return { error: "state-tidak-cocok" };
+  }
+  return { idToken: params.get("id_token"), nonce: tersimpan.nonce };
+}

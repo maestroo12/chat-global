@@ -28,6 +28,7 @@ import {
   getRedirectResult,
   signOut,
   GoogleAuthProvider,
+  OAuthProvider,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
@@ -37,7 +38,11 @@ import {
   GOOGLE_CLIENT_ID,
   HOSTED_ON_FIREBASE,
 } from "./config.js";
-import { mintaIdTokenGoogle } from "./google-login.js";
+import {
+  mintaIdTokenGoogle,
+  mulaiLoginRedirectGoogle,
+  ambilHasilRedirectGoogle,
+} from "./google-login.js";
 import { formatUkuran, simpan } from "./utils.js";
 import { NEWS } from "./news.js";
 import { initAdmin } from "./admin.js";
@@ -58,6 +63,32 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 // HP / browser mobile: popup sering diblokir atau jadi tab baru yang kehilangan
 // state, jadi di sana pakai redirect. Desktop tetap pakai popup.
 const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+
+// Balik dari halaman login Google di HP (alur redirect GIS): ambil token dari
+// alamat SEKARANG, sebelum router panel jalan. Ditukar jadi sesi Firebase di bawah.
+const hasilRedirectGoogle = HOSTED_ON_FIREBASE ? null : ambilHasilRedirectGoogle();
+let loginRedirectBerjalan = !!hasilRedirectGoogle?.idToken;
+
+async function masukDenganIdToken({ idToken, nonce }) {
+  try {
+    await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  } catch (err) {
+    // Cadangan: sertakan nonce mentah kalau Firebase memintanya
+    if (/nonce/i.test(err.code || err.message || "")) {
+      const cred = new OAuthProvider("google.com").credential({
+        idToken,
+        rawNonce: nonce,
+      });
+      await signInWithCredential(auth, cred);
+    } else {
+      throw err;
+    }
+  }
+}
+
+if (hasilRedirectGoogle?.error) {
+  alert("Login Google gagal: " + hasilRedirectGoogle.error);
+}
 
 // Setelah balik dari halaman login Google (alur redirect), tangkap hasil/errornya
 if (HOSTED_ON_FIREBASE) {
@@ -1950,15 +1981,9 @@ function aturBarisNama() {
     terapkanLimitNama();
     return;
   }
-  if (admin.aktif()) {
-    wrapper.hidden = true;
-    return;
-  }
-  wrapper.hidden = false;
-  nameInput.placeholder = namaGoogle(currentUser) || "Nama tampilan";
-  info.classList.remove("habis");
-  info.textContent = "Nama tampilan. Kosongkan untuk pakai nama Google.";
-  sinkronNamaInput();
+  // Akun Google (admin maupun biasa): kolom nama tampilan di Chat disembunyikan.
+  // Nama tampilan diatur lewat Profil (atau Panel admin untuk admin).
+  wrapper.hidden = true;
 }
 
 function sinkronNamaInput() {
@@ -2059,6 +2084,11 @@ async function masukKeluar() {
       if (!HOSTED_ON_FIREBASE && GOOGLE_CLIENT_ID) {
         // Di luar Firebase Hosting (mis. GitHub Pages): pakai Google Identity
         // Services, lalu tukar ID token jadi sesi Firebase.
+        if (isMobile) {
+          // HP: popup GIS sering error 400, jadi pindah halaman penuh ke Google
+          mulaiLoginRedirectGoogle(GOOGLE_CLIENT_ID);
+          return;
+        }
         const idToken = await mintaIdTokenGoogle(GOOGLE_CLIENT_ID);
         await signInWithCredential(
           auth,
@@ -2220,6 +2250,19 @@ let uidChat = null; // uid yang sedang dipakai untuk listener chat
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     admin.setUser(null);
+    if (loginRedirectBerjalan) {
+      // Sedang menukar token Google jadi sesi Firebase; jangan masuk anonim dulu
+      masukDenganIdToken(hasilRedirectGoogle)
+        .catch((err) => {
+          console.error("Login Google gagal:", err);
+          alert("Login gagal: " + (err.code || err.message));
+          return signInAnonymously(auth);
+        })
+        .finally(() => {
+          loginRedirectBerjalan = false;
+        });
+      return;
+    }
     signInAnonymously(auth).catch((err) => {
       console.error("Anonymous gagal:", err);
       input.placeholder =
