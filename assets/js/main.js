@@ -23,6 +23,8 @@ import {
   getAuth,
   signInAnonymously,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -38,7 +40,14 @@ import { initProfil } from "./profil.js";
 import { fotoAkun } from "./ui.js";
 
 // ===== INIT =====
-const app = initializeApp(firebaseConfig);
+// Di Firebase Hosting (web.app / firebaseapp.com), pakai domain situs sendiri
+// sebagai authDomain supaya login redirect tidak diblokir browser HP
+// (Safari/Chrome memblokir penyimpanan lintas-domain, hasilnya layar putih).
+const hostFirebase = /\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
+const app = initializeApp({
+  ...firebaseConfig,
+  authDomain: hostFirebase ? location.hostname : firebaseConfig.authDomain,
+});
 const db = getDatabase(app);
 const chatRef = ref(db, "chat");
 const usersRef = ref(db, "users");
@@ -2029,18 +2038,58 @@ window.addEventListener("beforeunload", () => {
 });
 
 // ===== LOGIN / LOGOUT GOOGLE =====
+// HP: pakai redirect (popup sering jadi layar putih). Desktop: popup.
+const isHP =
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+// Browser dalam aplikasi (IG, FB, Line, WebView) diblokir Google untuk login
+const isInAppBrowser = /FBAN|FBAV|Instagram|Line\/|; wv\)|WhatsApp|Telegram/i.test(
+  navigator.userAgent,
+);
+
+// Hasil login redirect (setelah balik dari halaman Google). Kalau gagal, tampilkan errornya.
+getRedirectResult(auth).catch((err) => {
+  console.error("Login redirect gagal:", err);
+  alert("Login gagal: " + (err.code || err.message));
+});
+
 async function masukKeluar() {
   try {
     if (isGoogle(currentUser)) {
       await signOut(auth); // otomatis kembali jadi tamu
+      return;
+    }
+    if (isInAppBrowser) {
+      alert(
+        "Login Google tidak bisa dari browser dalam aplikasi. Buka link ini lewat Chrome atau Safari.",
+      );
+      return;
+    }
+    // Login langsung ke akun Google (bukan menempel ke akun anonim)
+    if (isHP) {
+      await signInWithRedirect(auth, googleProvider);
     } else {
-      // Login langsung ke akun Google (bukan menempel ke akun anonim)
-      await signInWithPopup(auth, googleProvider);
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        // Popup diblokir / tidak didukung: coba redirect
+        if (
+          err.code === "auth/popup-blocked" ||
+          err.code === "auth/operation-not-supported-in-this-environment"
+        ) {
+          await signInWithRedirect(auth, googleProvider);
+        } else {
+          throw err;
+        }
+      }
     }
   } catch (err) {
     console.error("Login gagal:", err);
-    if (err.code !== "auth/popup-closed-by-user") {
-      alert("Login gagal: " + err.code);
+    if (
+      err.code !== "auth/popup-closed-by-user" &&
+      err.code !== "auth/cancelled-popup-request"
+    ) {
+      alert("Login gagal: " + (err.code || err.message));
     }
   }
 }
