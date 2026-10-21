@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#0f766e" />
     <script src="assets/js/theme-init.js"></script>
     <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/panels.css" />
     <meta
       name="description"
       content="FitChat: chat global realtime. Ngobrol sebagai tamu tanpa daftar, atau login Google untuk kirim foto/file dan pesan tanpa batas."
@@ -24,158 +25,380 @@
   </head>
 
   <body>
-    <div id="chat-container">
-      <header id="header">
-        <div id="header-info">
-          <h1>FitChat (Fitnah Chat)</h1>
-          <span id="online-status"><i class="dot"></i>Online</span>
+    <div id="app">
+      <nav id="nav" aria-label="Menu utama">
+        <div class="nav-brand">
+          <img src="favicon.svg" alt="" width="32" height="32" />
+          <span>FitChat</span>
         </div>
-        <div id="header-actions">
-          <button
-            id="admin-btn"
-            type="button"
-            aria-label="Panel admin"
-            title="Panel admin"
-            hidden
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-              />
-            </svg>
-          </button>
-          <button
-            id="news-btn"
-            type="button"
-            aria-label="Lihat pembaruan"
-            title="Yang baru"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"
-              />
-            </svg>
-          </button>
-          <button
-            id="theme-btn"
-            type="button"
-            aria-label="Ganti ke mode gelap"
-            title="Ganti ke mode gelap"
-          >
-            <svg
-              class="icon-moon"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              aria-hidden="true"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"
-              />
-            </svg>
-            <svg
-              class="icon-sun"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              aria-hidden="true"
-            >
-              <g
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="4" />
-                <path
-                  d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-                />
-              </g>
-            </svg>
-          </button>
-          <button id="login-btn" type="button">Login Google</button>
-        </div>
-      </header>
+        <ul id="nav-list">
+          <li>
+            <button type="button" class="nav-item" data-nav="beranda">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>
+              <span class="nav-label">Beranda</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="nav-item" data-nav="chat">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.2-4.4A8 8 0 1 1 21 12z" /></svg>
+              <span class="nav-label">Chat</span>
+              <span class="nav-badge" data-badge="chat" hidden></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="nav-item" data-nav="profil">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></g></svg>
+              <span class="nav-label">Profil</span>
+            </button>
+          </li>
+        </ul>
+        <button type="button" id="nav-akun" class="nav-akun" data-nav="profil" aria-label="Buka profil">
+          <span id="nav-akun-avatar"></span>
+          <span class="nav-akun-info">
+            <span id="nav-akun-nama" class="nav-akun-nama"></span>
+            <span id="nav-akun-status" class="nav-akun-status"></span>
+          </span>
+        </button>
+      </nav>
 
-      <main id="messages" aria-live="polite"></main>
+      <div id="panels">
+        <!-- Beranda -->
+        <section id="panel-beranda" class="panel" data-panel="beranda" aria-label="Beranda">
+          <header class="panel-bar">
+            <h2>Beranda</h2>
+            <div class="panel-bar-actions">
+              <button type="button" class="bar-btn" data-aksi="news" aria-label="Lihat pembaruan" title="Yang baru">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" /></svg>
+              </button>
+              <button type="button" class="bar-btn bar-tema" data-aksi="tema" aria-label="Ganti ke mode gelap" title="Ganti ke mode gelap">
+                <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></g></svg>
+              </button>
+            </div>
+          </header>
+          <div class="panel-body">
+            <div class="page">
+              <div class="hero">
+                <div class="hero-teks">
+                  <h3 id="beranda-judul" class="hero-judul">Halo!</h3>
+                  <p id="beranda-sub" class="hero-sub"></p>
+                </div>
+                <button type="button" class="btn utama" data-nav="chat">Buka chat global</button>
+              </div>
 
-      <div id="input-area">
-        <div class="name-input-wrapper">
-          <input
-            type="text"
-            id="user-name"
-            placeholder="Nama kamu"
-            autocomplete="nickname"
-            maxlength="24"
-          />
-          <span id="name-limit-info"></span>
-        </div>
+              <div class="grid">
+                <section id="beranda-tamu" class="card card-ajak" hidden>
+                  <h4>Kamu masuk sebagai tamu</h4>
+                  <p id="beranda-tamu-info" class="card-teks"></p>
+                  <button type="button" id="beranda-login" class="btn utama">Login Google</button>
+                </section>
 
-        <div id="attach-preview" hidden></div>
+                <section class="card card-terbaru">
+                  <div class="card-head">
+                    <h4>Obrolan terbaru</h4>
+                    <button type="button" class="link-btn" data-nav="chat">Buka chat</button>
+                  </div>
+                  <ul id="beranda-pesan" class="feed"></ul>
+                </section>
 
-        <div id="reply-preview" hidden>
-          <div class="reply-preview-content">
-            <span class="reply-preview-label">Membalas pesan</span>
-            <strong id="reply-preview-name"></strong>
-            <span id="reply-preview-text"></span>
+                <section class="card card-online">
+                  <div class="card-head">
+                    <h4>Sedang online</h4>
+                    <span id="beranda-online-jumlah" class="jumlah">0</span>
+                  </div>
+                  <ul id="beranda-online" class="online"></ul>
+                </section>
+
+                <section class="card card-baru">
+                  <div class="card-head">
+                    <h4>Yang baru di FitChat</h4>
+                  </div>
+                  <div id="beranda-news"></div>
+                  <button type="button" id="beranda-news-buka" class="link-btn">Lihat semua pembaruan</button>
+                </section>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <button id="reply-cancel" type="button" aria-label="Batalkan balasan">
-            ×
-          </button>
-        </div>
+        <!-- Chat global -->
+        <section id="panel-chat" class="panel" data-panel="chat" aria-label="Chat">
+          <div id="chat-container">
+            <header id="header">
+              <div id="header-info">
+                <h1>FitChat (Fitnah Chat)</h1>
+                <span id="online-status"><i class="dot"></i>Online</span>
+              </div>
+              <div id="header-actions">
+                <button
+                  id="admin-btn"
+                  type="button"
+                  aria-label="Panel admin"
+                  title="Panel admin"
+                  hidden
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  id="news-btn"
+                  data-aksi="news"
+                  type="button"
+                  aria-label="Lihat pembaruan"
+                  title="Yang baru"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"
+                    />
+                  </svg>
+                </button>
+                <button
+                  id="theme-btn"
+                  data-aksi="tema"
+                  type="button"
+                  aria-label="Ganti ke mode gelap"
+                  title="Ganti ke mode gelap"
+                >
+                  <svg
+                    class="icon-moon"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"
+                    />
+                  </svg>
+                  <svg
+                    class="icon-sun"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                  >
+                    <g
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="4" />
+                      <path
+                        d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                      />
+                    </g>
+                  </svg>
+                </button>
+                <button id="login-btn" type="button">Login Google</button>
+              </div>
+            </header>
 
-        <div id="compose">
-          <button
-            id="attach-btn"
-            type="button"
-            aria-label="Lampirkan foto atau file"
-            hidden
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"
-              />
-            </svg>
-          </button>
-          <input type="file" id="file-input" hidden />
-          <input
-            type="text"
-            id="message-input"
-            placeholder="Ketik pesan"
-            autocomplete="off"
-            enterkeyhint="send"
-          />
-          <button id="send-btn" type="button" aria-label="Kirim pesan">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"
-              />
-            </svg>
-          </button>
-        </div>
+            <main id="messages" aria-live="polite"></main>
+
+            <div id="input-area">
+              <div class="name-input-wrapper">
+                <input
+                  type="text"
+                  id="user-name"
+                  placeholder="Nama kamu"
+                  autocomplete="nickname"
+                  maxlength="24"
+                />
+                <span id="name-limit-info"></span>
+              </div>
+
+              <div id="attach-preview" hidden></div>
+
+              <div id="reply-preview" hidden>
+                <div class="reply-preview-content">
+                  <span class="reply-preview-label">Membalas pesan</span>
+                  <strong id="reply-preview-name"></strong>
+                  <span id="reply-preview-text"></span>
+                </div>
+
+                <button id="reply-cancel" type="button" aria-label="Batalkan balasan">
+                  ×
+                </button>
+              </div>
+
+              <div id="compose">
+                <button
+                  id="attach-btn"
+                  type="button"
+                  aria-label="Lampirkan foto atau file"
+                  hidden
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"
+                    />
+                  </svg>
+                </button>
+                <input type="file" id="file-input" hidden />
+                <input
+                  type="text"
+                  id="message-input"
+                  placeholder="Ketik pesan"
+                  autocomplete="off"
+                  enterkeyhint="send"
+                />
+                <button id="send-btn" type="button" aria-label="Kirim pesan">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Profil -->
+        <section id="panel-profil" class="panel" data-panel="profil" aria-label="Profil">
+          <header class="panel-bar">
+            <h2>Profil</h2>
+          </header>
+          <div class="panel-body">
+            <div class="page profil-grid">
+              <section class="card profil-kartu" aria-label="Identitas">
+                <div id="profil-avatar" class="profil-avatar"></div>
+                <h3 id="profil-nama" class="profil-nama"></h3>
+                <span id="profil-status" class="chip" hidden></span>
+                <p id="profil-email" class="profil-email"></p>
+                <p id="profil-bio" class="profil-bio"></p>
+              </section>
+
+              <div class="profil-utama">
+                <section id="profil-tamu" class="card card-ajak" hidden>
+                  <h4>Lengkapi profilmu</h4>
+                  <p class="card-teks">
+                    Tamu belum punya bio dan nama tampilan sendiri. Login Google untuk
+                    mengubahnya. Nama tamu diubah lewat kolom nama di halaman Chat.
+                  </p>
+                  <button type="button" id="profil-login" class="btn utama">Login Google</button>
+                </section>
+
+                <section id="profil-edit-kartu" class="card" hidden>
+                  <h4>Ubah profil</h4>
+                  <form id="profil-form" novalidate>
+                    <label id="profil-nama-wrap" class="field">
+                      <span>Nama tampilan</span>
+                      <input type="text" id="profil-nama-input" maxlength="24" autocomplete="off" />
+                      <small>Kosongkan untuk memakai nama Google.</small>
+                    </label>
+                    <p id="profil-nama-admin" class="hint" hidden>
+                      Nama tampilan adminmu diatur lewat Panel admin.
+                      <button type="button" id="profil-buka-admin" class="link-btn">Buka panel admin</button>
+                    </p>
+                    <label class="field">
+                      <span>Bio</span>
+                      <textarea id="profil-bio-input" rows="3" maxlength="140" placeholder="Ceritakan sedikit tentang dirimu"></textarea>
+                      <small id="profil-bio-hitung">0/140</small>
+                    </label>
+                    <div class="form-aksi">
+                      <button type="submit" id="profil-simpan" class="btn utama">Simpan</button>
+                      <span id="profil-kabar" class="kabar" role="status"></span>
+                    </div>
+                  </form>
+                </section>
+
+                <section class="card">
+                  <h4>Info akun</h4>
+                  <dl class="info">
+                    <div class="info-row">
+                      <dt>Jenis akun</dt>
+                      <dd id="info-jenis"></dd>
+                    </div>
+                    <div id="info-email-baris" class="info-row">
+                      <dt>Email</dt>
+                      <dd id="info-email"></dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>ID pengguna</dt>
+                      <dd>
+                        <span id="info-id"></span>
+                        <button type="button" id="info-salin" class="link-btn">Salin ID</button>
+                      </dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>Bergabung</dt>
+                      <dd id="info-gabung"></dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>Terakhir masuk</dt>
+                      <dd id="info-masuk"></dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section id="profil-limit" class="card" hidden>
+                  <h4>Jatah tamu hari ini</h4>
+                  <div class="meter-baris">
+                    <div class="meter-label"><span>Pesan</span><span id="limit-pesan"></span></div>
+                    <div class="meter"><span id="limit-pesan-bar"></span></div>
+                  </div>
+                  <div class="meter-baris">
+                    <div class="meter-label"><span>Ganti nama</span><span id="limit-nama"></span></div>
+                    <div class="meter"><span id="limit-nama-bar"></span></div>
+                  </div>
+                </section>
+
+                <section class="card">
+                  <h4>Pengaturan</h4>
+                  <div class="setting-row">
+                    <div class="setting-teks">
+                      <span class="setting-judul" id="profil-tema-label">Mode gelap</span>
+                      <span class="setting-sub">Kalau belum dipilih, mengikuti setelan perangkat.</span>
+                    </div>
+                    <button type="button" id="profil-tema" class="switch" role="switch" aria-checked="false" aria-labelledby="profil-tema-label"></button>
+                  </div>
+                  <div id="profil-admin-baris" class="setting-row" hidden>
+                    <div class="setting-teks">
+                      <span class="setting-judul">Panel admin</span>
+                      <span class="setting-sub">Blokir pengguna, hapus riwayat, nama admin.</span>
+                    </div>
+                    <button type="button" id="profil-buka-admin-2" class="btn biasa">Buka</button>
+                  </div>
+                  <div class="setting-row">
+                    <div class="setting-teks">
+                      <span class="setting-judul">Akun</span>
+                      <span id="profil-akun-info" class="setting-sub"></span>
+                    </div>
+                    <button type="button" id="profil-akun-btn" class="btn utama">Login dengan Google</button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 

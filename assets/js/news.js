@@ -5,6 +5,17 @@ import { formatUkuran } from "./utils.js";
 // berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
 export const NEWS = [
   {
+    id: "2026-10-21-panel",
+    date: "21 Okt 2026",
+    title: "Beranda & Profil",
+    points: [
+      "Sekarang ada menu Beranda, Chat, dan Profil. Di laptop menunya di samping, di HP di bawah.",
+      "Beranda nunjukin obrolan terbaru, siapa yang lagi online, dan pembaruan. Pesan yang belum dibaca muncul sebagai angka di menu Chat.",
+      "Di Profil lu bisa ubah nama tampilan dan bio (akun Google), lihat info akun, dan ganti mode gelap.",
+      "Tampilan di laptop/PC dibuat lebih lebar.",
+    ],
+  },
+  {
     id: "2026-10-20-tema",
     date: "20 Okt 2026",
     title: "Mode gelap & menu pembaruan",

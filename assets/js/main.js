@@ -32,6 +32,10 @@ import { firebaseConfig, LIMITS } from "./config.js";
 import { formatUkuran, simpan } from "./utils.js";
 import { NEWS } from "./news.js";
 import { initAdmin } from "./admin.js";
+import { initNav } from "./nav.js";
+import { initBeranda } from "./beranda.js";
+import { initProfil } from "./profil.js";
+import { fotoAkun } from "./ui.js";
 
 // ===== INIT =====
 const app = initializeApp(firebaseConfig);
@@ -87,19 +91,26 @@ function terapkanTema(tema) {
   document.documentElement.dataset.theme = tema;
   if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
 
+  // Tombol tema ada di header chat dan di bilah Beranda
   const label = gelap ? "Ganti ke mode terang" : "Ganti ke mode gelap";
-  themeBtn.setAttribute("aria-label", label);
-  themeBtn.title = label;
+  document.querySelectorAll('[data-aksi="tema"]').forEach((b) => {
+    b.setAttribute("aria-label", label);
+    b.title = label;
+  });
 }
 
-themeBtn.addEventListener("click", () => {
+function gantiTema() {
   const baru =
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch {}
+  } catch { }
   terapkanTema(baru);
-});
+}
+
+document
+  .querySelectorAll('[data-aksi="tema"]')
+  .forEach((b) => b.addEventListener("click", gantiTema));
 
 // Kalau belum pernah memilih, ikuti setelan perangkat (termasuk saat berubah)
 gelapQuery.addEventListener("change", (e) => {
@@ -151,6 +162,15 @@ let hasMore = true;
 let loadingOlder = false;
 let hariTerakhir = null;
 let menuTarget = null;
+let panelAktif = null; // panel yang sedang dibuka: beranda | chat | profil
+const panelApi = {}; // render semua panel, diisi di bagian PANEL
+let panelTimer = null;
+
+// Minta Beranda/Profil/menu digambar ulang (digabung supaya tidak berlebihan)
+function segarkanPanel() {
+  clearTimeout(panelTimer);
+  panelTimer = setTimeout(() => panelApi.render?.(), 120);
+}
 
 const isGoogle = (user) => !!user && !user.isAnonymous;
 
@@ -221,8 +241,12 @@ function newsTerbaca() {
   }
 }
 
+// Titik merah di semua tombol lonceng (header chat & bilah Beranda)
 function perbaruiTitikNews() {
-  newsBtn.classList.toggle("has-new", newsTerbaca() !== NEWS[0].id);
+  const baru = newsTerbaca() !== NEWS[0].id;
+  document
+    .querySelectorAll('[data-aksi="news"]')
+    .forEach((b) => b.classList.toggle("has-new", baru));
 }
 
 function renderNews(adaYangBaru) {
@@ -270,22 +294,27 @@ function renderNews(adaYangBaru) {
   newsList.scrollTop = 0;
 }
 
-function bukaNews() {
+let pembukaNews = newsBtn; // tombol yang membuka daftar, untuk mengembalikan fokus
+
+function bukaNews(pembuka = newsBtn) {
+  pembukaNews = pembuka;
   renderNews(newsTerbaca() !== NEWS[0].id);
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch {}
+  } catch { }
   perbaruiTitikNews();
   newsClose.focus();
 }
 
 function tutupNews() {
   newsModal.hidden = true;
-  newsBtn.focus();
+  pembukaNews.focus();
 }
 
-newsBtn.addEventListener("click", bukaNews);
+document
+  .querySelectorAll('[data-aksi="news"]')
+  .forEach((b) => b.addEventListener("click", () => bukaNews(b)));
 newsClose.addEventListener("click", tutupNews);
 newsModal.addEventListener("click", (e) => {
   if (e.target.dataset.tutupNews !== undefined) tutupNews();
@@ -323,16 +352,9 @@ function normalisasiIp(ip) {
   const [kiri, kanan] = ip.split("::");
   const a = kiri ? kiri.split(":") : [];
   const b = kanan !== undefined && kanan ? kanan.split(":") : [];
-  const tengah =
-    kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
+  const tengah = kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
   const penuh = [...a, ...tengah, ...b].slice(0, 8);
-  return (
-    "v6:" +
-    penuh
-      .slice(0, 4)
-      .map((g) => g.padStart(4, "0"))
-      .join(":")
-  );
+  return "v6:" + penuh.slice(0, 4).map((g) => g.padStart(4, "0")).join(":");
 }
 
 async function ambilIpMentah() {
@@ -360,13 +382,9 @@ function ambilIpId() {
     ipIdPromise = (async () => {
       const ip = await ambilIpMentah();
       if (!ip || !crypto?.subtle) return null;
-      const bytes = new TextEncoder().encode(
-        "fitchat-ganti-nama:" + normalisasiIp(ip),
-      );
+      const bytes = new TextEncoder().encode("fitchat-ganti-nama:" + normalisasiIp(ip));
       const hash = await crypto.subtle.digest("SHA-256", bytes);
-      return Array.from(new Uint8Array(hash), (x) =>
-        x.toString(16).padStart(2, "0"),
-      ).join("");
+      return Array.from(new Uint8Array(hash), (x) => x.toString(16).padStart(2, "0")).join("");
     })().then((id) => {
       if (!id) ipIdPromise = null; // gagal: boleh dicoba lagi nanti
       return id;
@@ -399,8 +417,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-      messagesDiv.scrollTop -
-      messagesDiv.clientHeight <
+    messagesDiv.scrollTop -
+    messagesDiv.clientHeight <
     160
   );
 }
@@ -685,7 +703,7 @@ function terapkanStatus(el, uid, verified) {
 
   if (!verified) {
     el.classList.add("status-anon");
-    el.textContent = "Orang Asing";
+    el.textContent = "Anon";
     el.title = "Pengguna tamu";
     return;
   }
@@ -889,6 +907,7 @@ function terimaBaru(key, data) {
   }
   perbaruiTombolLama();
   jadwalTandaiBaca();
+  segarkanPanel();
 }
 
 // ===== CENTANG (terkirim / sampai / dibaca) =====
@@ -902,6 +921,7 @@ const ONLINE_MS = 90000; // dianggap online kalau lastSeen kurang dari ini
 let dataUsers = {}; // salinan terakhir dari users/ (dipakai juga untuk hitung online)
 let lainOnline = 0; // jumlah pengguna LAIN yang sedang online
 let bacaMaks = ""; // key pesan terbaru yang sudah dibaca pengguna lain
+let bacaSaya = ""; // key pesan terbaru yang sudah kita baca (untuk hitungan belum dibaca)
 let balasLainMaks = ""; // key pesan terbaru yang DIKIRIM pengguna lain (pasti sudah baca pesan sebelumnya)
 let tandaiTerakhir = ""; // key terakhir yang sudah kita catat sebagai dibaca
 let bacaDitolak = false; // rules belum mengizinkan: jangan terus mencoba
@@ -980,6 +1000,7 @@ function hitungOnline() {
     lainOnline = lain;
     perbaruiCentang();
   }
+  segarkanPanel();
 }
 
 // Catat bahwa kita sudah membaca sampai pesan terbaru: hanya saat tab terlihat dan
@@ -988,6 +1009,7 @@ function hitungOnline() {
 function tandaiDibaca() {
   if (!currentUser || diblokir || bacaDitolak) return;
   if (document.visibilityState !== "visible") return;
+  if (panelAktif !== "chat") return; // chat sedang tidak dibuka: belum dibaca
   if (!dekatBawah()) return;
 
   const k = keys[keys.length - 1];
@@ -997,11 +1019,17 @@ function tandaiDibaca() {
   set(ref(db, `reads/${currentUser.uid}`), {
     key: k,
     at: serverTimestamp(),
-  }).catch((err) => {
-    tandaiTerakhir = "";
-    if (err?.code === "PERMISSION_DENIED") bacaDitolak = true;
-    console.warn("Gagal mencatat status baca:", err.code || err.message);
-  });
+  }).then(
+    () => {
+      if (k > bacaSaya) bacaSaya = k;
+      segarkanPanel();
+    },
+    (err) => {
+      tandaiTerakhir = "";
+      if (err?.code === "PERMISSION_DENIED") bacaDitolak = true;
+      console.warn("Gagal mencatat status baca:", err.code || err.message);
+    },
+  );
 }
 
 function jadwalTandaiBaca() {
@@ -1034,6 +1062,7 @@ function resetRiwayat() {
   dataUsers = {};
   lainOnline = 0;
   bacaMaks = "";
+  bacaSaya = "";
   balasLainMaks = "";
   tandaiTerakhir = "";
   bacaDitolak = false;
@@ -1048,6 +1077,7 @@ function pantauPerubahan(q) {
       perbaruiElemen(snap.key);
       perbaruiKutipanKe(snap.key);
       tampilkanReplyPreview();
+      segarkanPanel();
     }),
   );
 }
@@ -1120,7 +1150,14 @@ function mulaiListener() {
       (snap) => {
         let maks = "";
         snap.forEach((c) => {
-          if (c.key === currentUser?.uid) return;
+          if (c.key === currentUser?.uid) {
+            const sendiri = c.val()?.key;
+            if (typeof sendiri === "string" && sendiri > bacaSaya) {
+              bacaSaya = sendiri;
+              segarkanPanel();
+            }
+            return;
+          }
           const k = c.val()?.key;
           if (typeof k === "string" && k > maks) maks = k;
         });
@@ -1302,6 +1339,7 @@ function pantauHidden(user) {
     (snap) => {
       hiddenSet = new Set(Object.keys(snap.val() || {}));
       renderSemua("jaga");
+      segarkanPanel();
     },
     (err) => console.error("Gagal membaca daftar pesan tersembunyi:", err),
   );
@@ -1538,6 +1576,7 @@ function terapkanLimit() {
     input.placeholder = `Ketik pesan (sisa ${st.sisa} dari ${MAX_ANON})`;
   }
   aturTombolKirim();
+  segarkanPanel();
 }
 
 function pantauSisa(user) {
@@ -1601,10 +1640,7 @@ async function siapkanKunciNama(user) {
       await set(ref(db, `anonIp/${user.uid}`), ipId);
       return { path: `ipNameLimit/${ipId}`, ip: true };
     } catch (err) {
-      console.warn(
-        "Gagal mendaftarkan IP, pakai ID perangkat:",
-        err.code || err.message,
-      );
+      console.warn("Gagal mendaftarkan IP, pakai ID perangkat:", err.code || err.message);
     }
   }
   const dev = await pastikanPerangkat(user);
@@ -1679,6 +1715,7 @@ function terapkanLimitNama() {
   } else {
     info.textContent = `Sisa ganti nama: ${st.sisa} dari ${MAX_ANON_NAME_CHANGES} hari ini`;
   }
+  segarkanPanel();
 }
 
 // Menambahkan hitungan ganti nama ke penulisan pesan. Mengembalikan false kalau jatah
@@ -1890,6 +1927,7 @@ nameInput.addEventListener("keydown", (e) => {
   e.preventDefault();
   input.focus(); // Enter di kolom nama hanya pindah ke kolom pesan
 });
+nameInput.addEventListener("input", segarkanPanel); // sapaan di Beranda ikut nama tamu
 
 // Baris nama: tamu = nama bebas (ada batas ganti nama), Google non-admin = nama
 // tampilan pilihan sendiri (kosong = pakai nama Google), admin = lewat Panel admin.
@@ -1938,11 +1976,13 @@ async function simpanNamaPengguna() {
 function adminBerubah() {
   segarkanNama();
   aturBarisNama();
+  segarkanPanel();
 }
 
 function namaDaftarBerubah() {
   segarkanNama();
   sinkronNamaInput();
+  segarkanPanel();
   if (isGoogle(currentUser)) {
     update(ref(db, `users/${currentUser.uid}`), {
       name: namaTampil(currentUser),
@@ -2018,6 +2058,143 @@ loginBtn.addEventListener("click", async () => {
   }
 });
 
+// ===== PANEL: Beranda, Chat, Profil =====
+// Data untuk panel diambil dari state di atas. Panelnya sendiri ada di
+// nav.js (perpindahan), beranda.js, dan profil.js.
+function namaSaya() {
+  if (!currentUser) return "";
+  if (isGoogle(currentUser)) return namaTampil(currentUser);
+  return nameInput.value.trim() || namaTerkirim || "Orang Asing";
+}
+
+function statusAkun() {
+  if (!currentUser) return "";
+  if (!isGoogle(currentUser)) return "anon";
+  if (!admin.adminSiap()) return "memuat"; // jangan tampil "User" dulu lalu berubah
+  return admin.isAdmin(currentUser.uid) ? "admin" : "user";
+}
+
+function daftarOnline() {
+  const now = Date.now();
+  const hasil = [];
+  for (const [uid, u] of Object.entries(dataUsers || {})) {
+    if (!u?.lastSeen || now - u.lastSeen >= ONLINE_MS) continue;
+    hasil.push({
+      uid,
+      nama: admin.namaUntuk(uid, u.name) || u.name || "Tanpa nama",
+      saya: uid === currentUser?.uid,
+      admin: admin.isAdmin(uid),
+    });
+  }
+  // Kamu paling atas, sisanya urut nama
+  return hasil.sort(
+    (a, b) => b.saya - a.saya || a.nama.localeCompare(b.nama, "id"),
+  );
+}
+
+// Pesan terbaru yang masih tampil di layarmu (tanpa yang dihapus/disembunyikan)
+function pesanTerbaru(jumlah) {
+  const hasil = [];
+  for (let i = keys.length - 1; i >= 0 && hasil.length < jumlah; i--) {
+    const key = keys[i];
+    const d = pesan.get(key);
+    if (!d || d.deleted || hiddenSet.has(key)) continue;
+    const saya = d.uid === currentUser?.uid;
+    hasil.push({
+      key,
+      uid: d.uid,
+      nama: namaPengirim(d),
+      teks: ringkasanPesan(d),
+      ts: d.timestamp,
+      baru: !saya && !!bacaSaya && key > bacaSaya,
+    });
+  }
+  return hasil;
+}
+
+// Pesan orang lain yang masuk setelah terakhir kali kamu membuka chat
+function belumBaca() {
+  if (!currentUser || !bacaSaya) return 0;
+  let n = 0;
+  for (let i = keys.length - 1; i >= 0 && keys[i] > bacaSaya; i--) {
+    const d = pesan.get(keys[i]);
+    if (d && !d.deleted && d.uid !== currentUser.uid && !hiddenSet.has(keys[i]))
+      n++;
+  }
+  return n;
+}
+
+function infoLimit() {
+  return {
+    pesan: { sisa: Math.max(0, statusLimit().sisa), maks: MAX_ANON },
+    nama: {
+      sisa: Math.max(0, statusLimitNama().sisa),
+      maks: MAX_ANON_NAME_CHANGES,
+    },
+  };
+}
+
+// Nama tampilan akun Google biasa (kosong = pakai nama Google). Admin lewat Panel admin.
+async function simpanNamaTampilan(nama) {
+  if (!currentUser || !isGoogle(currentUser) || admin.aktif()) return;
+  const r = ref(db, `userNames/${currentUser.uid}`);
+  if (nama) await set(r, { name: nama.slice(0, 24), at: serverTimestamp() });
+  else await remove(r);
+}
+
+const nav = initNav({
+  onPindah(id) {
+    panelAktif = id;
+    if (id === "chat") {
+      // Ada pesan belum dibaca: turun ke bawah supaya langsung tercatat terbaca
+      if (belumBaca() > 0) scrollBawah();
+      jadwalTandaiBaca();
+    }
+    panelApi.render?.();
+  },
+});
+
+const beranda = initBeranda({
+  user: () => currentUser,
+  isGoogle: () => isGoogle(currentUser),
+  nama: namaSaya,
+  online: daftarOnline,
+  pesanTerbaru,
+  belumBaca,
+  limit: infoLimit,
+  news: () => NEWS[0],
+  bukaNews,
+  login: () => loginBtn.click(),
+});
+
+const profil = initProfil({
+  db,
+  user: () => currentUser,
+  nama: namaSaya,
+  namaGoogle: () => (currentUser ? namaGoogle(currentUser) : ""),
+  namaKustom: () =>
+    currentUser ? admin.namaPengguna(currentUser.uid) || "" : "",
+  status: statusAkun,
+  limit: infoLimit,
+  simpanNama: simpanNamaTampilan,
+  gantiTema: () => themeBtn.click(),
+  login: () => loginBtn.click(),
+  bukaAdmin: () => document.getElementById("admin-btn").click(),
+});
+
+panelApi.render = () => {
+  if (!currentUser) return;
+  nav.setBadge("chat", panelAktif === "chat" ? 0 : belumBaca());
+  nav.setAkun({
+    nama: namaSaya(),
+    uid: currentUser.uid,
+    foto: fotoAkun(currentUser),
+    status: statusAkun(),
+  });
+  beranda.segarkan();
+  profil.segarkan();
+};
+
 // ===== STATUS AUTH =====
 let uidChat = null; // uid yang sedang dipakai untuk listener chat
 onAuthStateChanged(auth, (user) => {
@@ -2053,6 +2230,7 @@ onAuthStateChanged(auth, (user) => {
     hentikanListener();
     resetRiwayat();
     uidChat = user.uid;
+    profil.setUser(user);
   }
   mulaiListener();
   mulaiPresence(user);
@@ -2061,4 +2239,5 @@ onAuthStateChanged(auth, (user) => {
   pantauNamaChange(user);
   pantauHidden(user);
   renderSemua();
+  segarkanPanel();
 });

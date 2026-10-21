@@ -43,6 +43,19 @@
       }
     },
 
+    "profiles": {
+      ".read": "auth != null",
+
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'google.com' && !root.child('banned').child(auth.uid).exists()",
+        ".validate": "newData.hasChildren(['bio', 'at'])",
+
+        "bio": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
+        "at": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
     "reads": {
       ".read": "auth != null",
       ".indexOn": ["at"],

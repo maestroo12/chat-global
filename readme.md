@@ -10,6 +10,9 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 
 ## Fitur
 
+- **Tiga panel**: Beranda, Chat, dan Profil. Di laptop/PC menunya di samping dan area kerjanya lebar, di HP menunya di bawah. Alamat tiap panel: `#/beranda`, `#/chat`, `#/profil`.
+- **Beranda**: sapaan, obrolan terbaru, siapa yang online, pembaruan, dan jumlah pesan chat yang belum dibaca (angka di menu Chat).
+- **Profil**: avatar, info akun, ubah nama tampilan dan bio (akun Google, bio disimpan di `profiles/{uid}`), jatah tamu, saklar mode gelap, login/keluar.
 - **Chat realtime** untuk semua pengguna dalam satu ruang global.
 - **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama. Batas ganti nama 5x per hari, baru dihitung saat pesan dengan nama baru benar-benar terkirim.
 - **Login Google**: nama otomatis, centang terverifikasi, kirim foto/file, tanpa batas pesan.
