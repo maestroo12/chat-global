@@ -1,15 +1,29 @@
 // Konfigurasi web Firebase. Nilai ini memang publik (ikut terkirim ke browser);
 // keamanan data dijaga oleh database.rules.json, bukan dengan menyembunyikan key.
 // Di Google Cloud Console, batasi API key ke domain situs kamu (HTTP referrer).
+
+// Web client ID untuk "Sign in with Google" (dipakai kalau situs TIDAK di Firebase
+// Hosting, mis. GitHub Pages). Ambil dari: Firebase Console -> Authentication ->
+// Sign-in method -> Google -> Web SDK configuration -> "Web client ID".
+// Bentuknya: 1234567890-xxxxxxxx.apps.googleusercontent.com
+export const GOOGLE_CLIENT_ID =
+  "681085064123-qer486qqqntmp0l8l4ji9l3vm16nfcfl.apps.googleusercontent.com";
+
+// true kalau situs dibuka dari Firebase Hosting (domain *.web.app / *.firebaseapp.com).
+// Di sana /__/auth/handler tersedia di domain yang sama, jadi login Firebase
+// normal (popup/redirect) aman dari pemblokiran storage di browser HP.
+// Di GitHub Pages hasilnya false, karena /__/auth/handler tidak ada di sana.
+export const HOSTED_ON_FIREBASE = /\.(web\.app|firebaseapp\.com)$/.test(
+  location.hostname,
+);
+
+const AUTH_DOMAIN = HOSTED_ON_FIREBASE
+  ? location.hostname
+  : "chat-globall.firebaseapp.com";
+
 export const firebaseConfig = {
   apiKey: "AIzaSyDQYSoIuyWfHJYCMU8B0HAKFOkshiGCrXw",
-  // Harus SAMA dengan domain tempat situs dibuka. Kalau beda, browser HP
-  // (Brave, Safari, Chrome terbaru) memblokir storage lintas-domain dan login
-  // gagal dengan "missing initial state". Firebase Hosting otomatis menyediakan
-  // /__/auth/handler di setiap domainnya. Di localhost pakai domain bawaan.
-  authDomain: ["localhost", "127.0.0.1"].includes(location.hostname)
-    ? "chat-globall.firebaseapp.com"
-    : location.hostname,
+  authDomain: AUTH_DOMAIN,
   databaseURL:
     "https://chat-globall-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "chat-globall",

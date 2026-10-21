@@ -24,13 +24,20 @@ import {
   signInAnonymously,
   signInWithPopup,
   signInWithRedirect,
+  signInWithCredential,
   getRedirectResult,
   signOut,
   GoogleAuthProvider,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
-import { firebaseConfig, LIMITS } from "./config.js";
+import {
+  firebaseConfig,
+  LIMITS,
+  GOOGLE_CLIENT_ID,
+  HOSTED_ON_FIREBASE,
+} from "./config.js";
+import { mintaIdTokenGoogle } from "./google-login.js";
 import { formatUkuran, simpan } from "./utils.js";
 import { NEWS } from "./news.js";
 import { initAdmin } from "./admin.js";
@@ -53,10 +60,12 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
 
 // Setelah balik dari halaman login Google (alur redirect), tangkap hasil/errornya
-getRedirectResult(auth).catch((err) => {
-  console.error("Login redirect gagal:", err);
-  alert("Login gagal: " + err.code);
-});
+if (HOSTED_ON_FIREBASE) {
+  getRedirectResult(auth).catch((err) => {
+    console.error("Login redirect gagal:", err);
+    alert("Login gagal: " + err.code);
+  });
+}
 
 // ===== DOM =====
 const messagesDiv = document.getElementById("messages");
@@ -2047,7 +2056,15 @@ async function masukKeluar() {
       await signOut(auth); // otomatis kembali jadi tamu
     } else {
       // Login langsung ke akun Google (bukan menempel ke akun anonim)
-      if (isMobile) {
+      if (!HOSTED_ON_FIREBASE && GOOGLE_CLIENT_ID) {
+        // Di luar Firebase Hosting (mis. GitHub Pages): pakai Google Identity
+        // Services, lalu tukar ID token jadi sesi Firebase.
+        const idToken = await mintaIdTokenGoogle(GOOGLE_CLIENT_ID);
+        await signInWithCredential(
+          auth,
+          GoogleAuthProvider.credential(idToken),
+        );
+      } else if (isMobile && HOSTED_ON_FIREBASE) {
         await signInWithRedirect(auth, googleProvider); // halaman pindah ke Google
       } else {
         await signInWithPopup(auth, googleProvider);

@@ -1259,3 +1259,45 @@ button:focus-visible {
     background: var(--flash);
   }
 }
+/* ---------- Login Google (GIS) ---------- */
+.gl-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--backdrop);
+}
+.gl-card {
+  width: min(320px, 100%);
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.gl-judul {
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+.gl-tombol {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+.gl-batal {
+  margin-top: 14px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--btn-soft);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.gl-batal:hover {
+  background: var(--btn-soft-hover);
+}
