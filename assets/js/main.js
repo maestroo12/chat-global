@@ -11,6 +11,7 @@ import {
   onChildChanged,
   query,
   orderByKey,
+  orderByChild,
   limitToLast,
   startAt,
   endAt,
@@ -96,7 +97,7 @@ themeBtn.addEventListener("click", () => {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
     localStorage.setItem(THEME_KEY, baru);
-  } catch {}
+  } catch { }
   terapkanTema(baru);
 });
 
@@ -160,8 +161,8 @@ const admin = initAdmin({
     diblokir = status;
     segarkanKirim();
   },
-  onAdminBerubah: segarkanNama,
-  onNamaDaftarBerubah: segarkanNama,
+  onAdminBerubah: adminBerubah,
+  onNamaDaftarBerubah: namaDaftarBerubah,
   // Nama tampilan admin berubah: samakan nama di daftar online
   onNamaAdmin() {
     if (!isGoogle(currentUser)) return;
@@ -186,8 +187,16 @@ function namaGoogle(user) {
 }
 
 // Nama yang dipakai di chat untuk akun Google: nama kustom admin kalau ada, kalau tidak nama Google
+function namaKustomAkun(user) {
+  return (
+    (admin.isAdmin(user.uid)
+      ? admin.namaTampil()
+      : admin.namaPengguna(user.uid)) || null
+  );
+}
+
 function namaTampil(user) {
-  return (admin.namaTampil() || namaGoogle(user) || "Pengguna Google").slice(
+  return (namaKustomAkun(user) || namaGoogle(user) || "Pengguna Google").slice(
     0,
     40,
   );
@@ -266,7 +275,7 @@ function bukaNews() {
   newsModal.hidden = false;
   try {
     localStorage.setItem(NEWS_KEY, NEWS[0].id);
-  } catch {}
+  } catch { }
   perbaruiTitikNews();
   newsClose.focus();
 }
@@ -300,6 +309,61 @@ if (!deviceId) {
   simpan.tulis("chatDeviceId", deviceId);
 }
 
+// ===== IP (batas ganti nama berlaku lintas browser/perangkat di jaringan yang sama) =====
+// Alamat IP publik diambil dari layanan ipify lalu di-hash (SHA-256); yang disimpan di
+// database hanya hash-nya. Catatan: ini dilaporkan oleh browser, jadi cukup untuk
+// mencegah ganti-ganti browser/perangkat di jaringan yang sama, tapi bukan keamanan
+// penuh (butuh server untuk itu).
+function normalisasiIp(ip) {
+  ip = String(ip).trim().toLowerCase();
+  if (!ip.includes(":")) return ip; // IPv4
+  const v4 = ip.match(/(\d{1,3}(?:\.\d{1,3}){3})$/); // ::ffff:1.2.3.4
+  if (v4) return v4[1];
+  // IPv6: pakai prefix /64, karena 64 bit terakhir (alamat sementara) berganti-ganti
+  const [kiri, kanan] = ip.split("::");
+  const a = kiri ? kiri.split(":") : [];
+  const b = kanan !== undefined && kanan ? kanan.split(":") : [];
+  const tengah = kanan === undefined ? [] : Array(8 - a.length - b.length).fill("0");
+  const penuh = [...a, ...tengah, ...b].slice(0, 8);
+  return "v6:" + penuh.slice(0, 4).map((g) => g.padStart(4, "0")).join(":");
+}
+
+async function ambilIpMentah() {
+  for (const url of [
+    "https://api.ipify.org?format=json", // IPv4 dulu: paling stabil antar browser
+    "https://api64.ipify.org?format=json",
+  ]) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch(url, { cache: "no-store", signal: ctl.signal });
+      clearTimeout(t);
+      const j = await r.json();
+      if (j?.ip) return j.ip;
+    } catch {
+      /* coba alamat berikutnya */
+    }
+  }
+  return null;
+}
+
+let ipIdPromise = null;
+function ambilIpId() {
+  if (!ipIdPromise) {
+    ipIdPromise = (async () => {
+      const ip = await ambilIpMentah();
+      if (!ip || !crypto?.subtle) return null;
+      const bytes = new TextEncoder().encode("fitchat-ganti-nama:" + normalisasiIp(ip));
+      const hash = await crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(hash), (x) => x.toString(16).padStart(2, "0")).join("");
+    })().then((id) => {
+      if (!id) ipIdPromise = null; // gagal: boleh dicoba lagi nanti
+      return id;
+    });
+  }
+  return ipIdPromise;
+}
+
 // Selisih jam server, supaya hitungan 24 jam tidak bergantung jam HP/laptop
 onValue(ref(db, ".info/serverTimeOffset"), (snap) => {
   serverOffset = snap.val() || 0;
@@ -324,8 +388,8 @@ function labelHari(ts) {
 function dekatBawah() {
   return (
     messagesDiv.scrollHeight -
-      messagesDiv.scrollTop -
-      messagesDiv.clientHeight <
+    messagesDiv.scrollTop -
+    messagesDiv.clientHeight <
     160
   );
 }
@@ -712,6 +776,8 @@ function buatElemen(key, data) {
       minute: "2-digit",
     });
   }
+  // Centang status kirim/baca hanya untuk pesan sendiri yang belum dihapus
+  if (isMe && !data.deleted) time.appendChild(buatCentang(key));
   bubble.appendChild(time);
 
   // Ketuk pesan untuk membuka menu (diabaikan kalau sedang memilih teks)
@@ -807,7 +873,126 @@ function terimaBaru(key, data) {
     renderSemua("jaga");
   }
   perbaruiTombolLama();
+  jadwalTandaiBaca();
 }
+
+// ===== CENTANG (terkirim / sampai / dibaca) =====
+// ✓   = belum ada pengguna lain yang online
+// ✓✓  = ada minimal 1 pengguna lain yang online
+// ✓✓ biru = sudah dibaca pengguna lain
+// "Dibaca" dicatat per akun sebagai pesan terakhir yang sudah dilihat (reads/{uid}),
+// bukan per pesan, jadi ringan: pesan dianggap dibaca kalau key-nya <= catatan orang lain.
+const readsRef = ref(db, "reads");
+const ONLINE_MS = 90000; // dianggap online kalau lastSeen kurang dari ini
+let dataUsers = {}; // salinan terakhir dari users/ (dipakai juga untuk hitung online)
+let lainOnline = 0; // jumlah pengguna LAIN yang sedang online
+let bacaMaks = ""; // key pesan terbaru yang sudah dibaca pengguna lain
+let tandaiTerakhir = ""; // key terakhir yang sudah kita catat sebagai dibaca
+let bacaDitolak = false; // rules belum mengizinkan: jangan terus mencoba
+let tandaiTimer = null;
+
+function statusCentang(key) {
+  if (bacaMaks && key <= bacaMaks) return "read";
+  return lainOnline > 0 ? "delivered" : "sent";
+}
+
+function terapkanCentang(el, key) {
+  const st = statusCentang(key);
+  el.classList.remove("sent", "delivered", "read");
+  el.classList.add(st);
+  el.classList.toggle("double", st !== "sent");
+  const label = {
+    sent: "Terkirim",
+    delivered: "Sampai (ada pengguna online)",
+    read: "Dibaca",
+  }[st];
+  el.title = label;
+  el.setAttribute("aria-label", label);
+}
+
+function buatCentang(key) {
+  const NS = "http://www.w3.org/2000/svg";
+  const el = document.createElement("span");
+  el.classList.add("ticks");
+  el.setAttribute("role", "img");
+  el.setAttribute("data-key", key);
+
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 18 11");
+  svg.setAttribute("aria-hidden", "true");
+  const garis = [
+    ["tick-1", "M1 5.8 4.6 9.4 11.2 1.6"],
+    ["tick-2", "M6 5.8 9.6 9.4 16.2 1.6"],
+  ];
+  for (const [kelas, d] of garis) {
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", d);
+    p.setAttribute("class", kelas);
+    svg.appendChild(p);
+  }
+  el.appendChild(svg);
+  terapkanCentang(el, key);
+  return el;
+}
+
+function perbaruiCentang() {
+  listDiv.querySelectorAll(".ticks[data-key]").forEach((el) => {
+    terapkanCentang(el, el.getAttribute("data-key"));
+  });
+}
+
+// Hitung pengguna online dari salinan users/ (juga dipanggil berkala, karena
+// lastSeen yang basi tidak memicu snapshot baru)
+function hitungOnline() {
+  const now = Date.now();
+  let total = 0;
+  let lain = 0;
+  for (const [uid, u] of Object.entries(dataUsers || {})) {
+    if (u?.lastSeen && now - u.lastSeen < ONLINE_MS) {
+      total++;
+      if (uid !== currentUser?.uid) lain++;
+    }
+  }
+  const dot = document.createElement("i");
+  dot.classList.add("dot");
+  onlineStatus.replaceChildren(dot, `${total} Online`);
+
+  if (lain !== lainOnline) {
+    lainOnline = lain;
+    perbaruiCentang();
+  }
+}
+
+// Catat bahwa kita sudah membaca sampai pesan terbaru: hanya saat tab terlihat dan
+// posisi scroll ada di bawah (benar-benar melihat pesan terbaru). Tidak wajib fokus,
+// supaya dua jendela yang dibuka berdampingan sama-sama bisa mencatat.
+function tandaiDibaca() {
+  if (!currentUser || diblokir || bacaDitolak) return;
+  if (document.visibilityState !== "visible") return;
+  if (!dekatBawah()) return;
+
+  const k = keys[keys.length - 1];
+  if (!k || k <= tandaiTerakhir) return;
+  tandaiTerakhir = k;
+
+  set(ref(db, `reads/${currentUser.uid}`), {
+    key: k,
+    at: serverTimestamp(),
+  }).catch((err) => {
+    tandaiTerakhir = "";
+    if (err?.code === "PERMISSION_DENIED") bacaDitolak = true;
+    console.warn("Gagal mencatat status baca:", err.code || err.message);
+  });
+}
+
+function jadwalTandaiBaca() {
+  clearTimeout(tandaiTimer);
+  tandaiTimer = setTimeout(tandaiDibaca, 500);
+}
+
+document.addEventListener("visibilitychange", jadwalTandaiBaca);
+window.addEventListener("focus", jadwalTandaiBaca);
+messagesDiv.addEventListener("scroll", jadwalTandaiBaca, { passive: true });
 
 // Semua pemantau chat dikumpulkan di sini supaya bisa dihentikan & dipasang ulang
 // saat akun berganti (Firebase memutus listener yang izin bacanya hilang saat logout).
@@ -827,6 +1012,11 @@ function resetRiwayat() {
   hasMore = true;
   loadingOlder = false;
   hariTerakhir = null;
+  dataUsers = {};
+  lainOnline = 0;
+  bacaMaks = "";
+  tandaiTerakhir = "";
+  bacaDitolak = false;
   listDiv.replaceChildren();
   perbaruiTombolLama();
 }
@@ -862,6 +1052,7 @@ function mulaiListener() {
         `Riwayat: ${s.size} pesan terbaru dimuat, ada pesan lama: ${hasMore}`,
       );
       perbaruiTombolLama();
+      jadwalTandaiBaca();
     })
     .catch((err) =>
       console.warn("Gagal mengecek riwayat:", err.code || err.message),
@@ -890,18 +1081,37 @@ function mulaiListener() {
 
   stopsChat.push(
     onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      let count = 0;
-      if (data) {
-        const now = Date.now();
-        Object.values(data).forEach((user) => {
-          if (user.lastSeen && now - user.lastSeen < 60000) count++;
-        });
-      }
-      const dot = document.createElement("i");
-      dot.classList.add("dot");
-      onlineStatus.replaceChildren(dot, `${count} Online`);
+      dataUsers = snapshot.val() || {};
+      hitungOnline();
     }),
+  );
+  const timerOnline = setInterval(hitungOnline, 15000);
+  stopsChat.push(() => clearInterval(timerOnline));
+
+  // Catatan "sudah dibaca" milik pengguna lain (hanya yang aktif 3 hari terakhir)
+  const bacaQ = query(
+    readsRef,
+    orderByChild("at"),
+    startAt(Date.now() - 3 * 86400000),
+  );
+  stopsChat.push(
+    onValue(
+      bacaQ,
+      (snap) => {
+        let maks = "";
+        snap.forEach((c) => {
+          if (c.key === currentUser?.uid) return;
+          const k = c.val()?.key;
+          if (typeof k === "string" && k > maks) maks = k;
+        });
+        if (maks !== bacaMaks) {
+          bacaMaks = maks;
+          perbaruiCentang();
+        }
+      },
+      (err) =>
+        console.warn("Gagal membaca status baca:", err.code || err.message),
+    ),
   );
 }
 
@@ -1357,7 +1567,49 @@ async function tambahkanLimitTamu(updates) {
   return true;
 }
 
-// ===== LIMIT PERUBAHAN NAMA TAMU (per perangkat, 24 jam) =====
+// ===== LIMIT PERUBAHAN NAMA TAMU (per IP, 24 jam) =====
+// Kunci limit = hash IP (lintas browser/perangkat di jaringan yang sama). Kalau IP
+// tidak bisa didapat (diblokir ad-blocker, dsb.), jatuh ke ID perangkat seperti dulu.
+let kunciNama = null; // { path, ip }
+let kunciNamaPromise = null;
+let kunciNamaUid = null;
+
+async function siapkanKunciNama(user) {
+  const ipId = await ambilIpId();
+  if (ipId) {
+    try {
+      await set(ref(db, `anonIp/${user.uid}`), ipId);
+      return { path: `ipNameLimit/${ipId}`, ip: true };
+    } catch (err) {
+      console.warn("Gagal mendaftarkan IP, pakai ID perangkat:", err.code || err.message);
+    }
+  }
+  const dev = await pastikanPerangkat(user);
+  return { path: `deviceNameLimit/${dev}`, ip: false };
+}
+
+function pastikanKunciNama(user) {
+  if (kunciNamaPromise && kunciNamaUid === user.uid) return kunciNamaPromise;
+  kunciNamaUid = user.uid;
+  kunciNamaPromise = siapkanKunciNama(user)
+    .then((k) => {
+      if (kunciNamaUid === user.uid) kunciNama = k;
+      return k;
+    })
+    .catch((err) => {
+      kunciNamaPromise = null;
+      kunciNamaUid = null;
+      throw err;
+    });
+  return kunciNamaPromise;
+}
+
+// Nama terakhir yang sudah dipakai: dari database kalau pakai IP (jadi sama di semua
+// browser), kalau tidak dari penyimpanan lokal.
+function namaDasar() {
+  return kunciNama?.ip ? nameChangeData?.last || "" : namaTerkirim;
+}
+
 function statusLimitNama() {
   const now = Date.now() + serverOffset;
   if (!nameChangeData || now - nameChangeData.start >= DAY_MS) {
@@ -1373,19 +1625,17 @@ function pantauNamaChange(user) {
   if (stopPantauNameChange) stopPantauNameChange();
   stopPantauNameChange = null;
   nameChangeData = null;
+  kunciNama = null;
 
   if (isGoogle(user)) return;
 
-  pastikanPerangkat(user)
-    .then((dev) => {
+  pastikanKunciNama(user)
+    .then((k) => {
       if (currentUser?.uid !== user.uid) return;
-      stopPantauNameChange = onValue(
-        ref(db, `deviceNameLimit/${dev}`),
-        (snap) => {
-          nameChangeData = snap.val();
-          terapkanLimitNama();
-        },
-      );
+      stopPantauNameChange = onValue(ref(db, k.path), (snap) => {
+        nameChangeData = snap.val();
+        terapkanLimitNama();
+      });
     })
     .catch((err) => {
       console.error("Gagal menyiapkan limit nama:", err);
@@ -1395,10 +1645,7 @@ function pantauNamaChange(user) {
 function terapkanLimitNama() {
   const info = document.getElementById("name-limit-info");
   if (!info) return;
-  if (isGoogle(currentUser)) {
-    info.textContent = "";
-    return;
-  }
+  if (isGoogle(currentUser)) return; // teks untuk akun Google diatur aturBarisNama()
 
   const st = statusLimitNama();
   const habis = st.sisa <= 0;
@@ -1411,21 +1658,44 @@ function terapkanLimitNama() {
   }
 }
 
-async function tambahkanLimitNamaChange(updates) {
-  const dev = await pastikanPerangkat(currentUser);
-  const path = `deviceNameLimit/${dev}`;
-  const snap = await get(ref(db, path));
+// Menambahkan hitungan ganti nama ke penulisan pesan. Mengembalikan false kalau jatah
+// habis. Nama yang sama dengan nama terakhir tidak dihitung.
+async function tambahkanLimitNamaChange(updates, name) {
+  const k = await pastikanKunciNama(currentUser);
+  const snap = await get(ref(db, k.path));
   const lim = snap.val();
   const now = Date.now() + serverOffset;
 
+  if (k.ip) {
+    if (!lim) {
+      // Pertama kali dari IP ini: gratis, hanya mencatat nama terakhir
+      updates[k.path] = { count: 0, start: serverTimestamp(), last: name };
+      return true;
+    }
+    if (lim.last === name) return true; // nama sama, tidak dihitung
+    if (now - lim.start >= DAY_MS) {
+      updates[k.path] = { count: 1, start: serverTimestamp(), last: name };
+      return true;
+    }
+    if (lim.count >= MAX_ANON_NAME_CHANGES) {
+      nameChangeData = lim;
+      terapkanLimitNama();
+      return false;
+    }
+    updates[k.path] = { count: lim.count + 1, start: lim.start, last: name };
+    return true;
+  }
+
+  // Cadangan (IP tidak tersedia): per perangkat, nama terakhir dari penyimpanan lokal
+  if (!namaTerkirim || name === namaTerkirim) return true;
   if (!lim || now - lim.start >= DAY_MS) {
-    updates[path] = { count: 1, start: serverTimestamp() };
+    updates[k.path] = { count: 1, start: serverTimestamp() };
   } else if (lim.count >= MAX_ANON_NAME_CHANGES) {
     nameChangeData = lim;
     terapkanLimitNama();
     return false;
   } else {
-    updates[path] = { count: lim.count + 1, start: lim.start };
+    updates[k.path] = { count: lim.count + 1, start: lim.start };
   }
   return true;
 }
@@ -1460,7 +1730,7 @@ async function kirimPesan() {
   const google = isGoogle(currentUser);
   const uid = currentUser.uid;
   const name = google
-    ? admin.namaTampil() || namaGoogle(currentUser)
+    ? namaKustomAkun(currentUser) || namaGoogle(currentUser)
     : nameInput.value.trim() || "Orang Asing";
 
   if (!name) {
@@ -1472,7 +1742,8 @@ async function kirimPesan() {
 
   // Ganti nama baru dihitung kalau pesan dengan nama baru ini benar-benar terkirim,
   // bukan saat kolom nama diubah. Pesan pertama (belum ada nama sebelumnya) gratis.
-  const gantiNama = !google && !!namaTerkirim && name !== namaTerkirim;
+  const dasar = namaDasar();
+  const gantiNama = !google && !!dasar && name !== dasar;
   if (gantiNama && statusLimitNama().sisa <= 0) {
     tolakGantiNama();
     return;
@@ -1525,7 +1796,7 @@ async function kirimPesan() {
         }
         // Dikirim dalam satu update yang sama dengan pesannya: kalau pesan gagal,
         // hitungan ganti nama juga tidak bertambah.
-        if (gantiNama && !(await tambahkanLimitNamaChange(updates))) {
+        if (!(await tambahkanLimitNamaChange(updates, name))) {
           tolakGantiNama();
           return;
         }
@@ -1545,6 +1816,16 @@ async function kirimPesan() {
       simpan.tulis("chatName", name);
       // Samakan nama di daftar online (panel admin), tidak masalah kalau gagal
       update(ref(db, `users/${uid}`), { name }).catch(() => {});
+    }
+
+    // Akun biasa (tamu & Google non-admin yang punya nama tampilan): simpan nama
+    // terbaru supaya SELURUH riwayat pesannya ikut memakai nama ini. Tidak masalah
+    // kalau gagal, pesan sudah terkirim.
+    if (!google || (!admin.isAdmin(uid) && admin.namaPengguna(uid))) {
+      set(ref(db, `userNames/${uid}`), {
+        name,
+        at: serverTimestamp(),
+      }).catch(() => {});
     }
 
     input.value = "";
@@ -1573,10 +1854,11 @@ input.addEventListener("keydown", (e) => {
 let namaTerkirim = "";
 
 function tolakGantiNama() {
+  const dasar = namaDasar() || namaTerkirim;
   alert(
-    `Batas ganti nama habis untuk hari ini. Nama dikembalikan ke "${namaTerkirim}". Kirim lagi untuk memakai nama itu.`,
+    `Batas ganti nama habis untuk hari ini. Nama dikembalikan ke "${dasar}". Kirim lagi untuk memakai nama itu.`,
   );
-  nameInput.value = namaTerkirim;
+  nameInput.value = dasar;
   terapkanLimitNama();
 }
 
@@ -1586,28 +1868,110 @@ nameInput.addEventListener("keydown", (e) => {
   input.focus(); // Enter di kolom nama hanya pindah ke kolom pesan
 });
 
+// Baris nama: tamu = nama bebas (ada batas ganti nama), Google non-admin = nama
+// tampilan pilihan sendiri (kosong = pakai nama Google), admin = lewat Panel admin.
+function aturBarisNama() {
+  if (!currentUser) return;
+  const wrapper = nameInput.closest(".name-input-wrapper");
+  const info = document.getElementById("name-limit-info");
+
+  if (!isGoogle(currentUser)) {
+    wrapper.hidden = false;
+    nameInput.placeholder = "Nama kamu";
+    terapkanLimitNama();
+    return;
+  }
+  if (admin.aktif()) {
+    wrapper.hidden = true;
+    return;
+  }
+  wrapper.hidden = false;
+  nameInput.placeholder = namaGoogle(currentUser) || "Nama tampilan";
+  info.classList.remove("habis");
+  info.textContent = "Nama tampilan. Kosongkan untuk pakai nama Google.";
+  sinkronNamaInput();
+}
+
+function sinkronNamaInput() {
+  if (!currentUser || !isGoogle(currentUser) || admin.aktif()) return;
+  if (document.activeElement === nameInput) return;
+  nameInput.value = admin.namaPengguna(currentUser.uid) || "";
+}
+
+async function simpanNamaPengguna() {
+  if (!currentUser || !isGoogle(currentUser) || admin.aktif()) return;
+  const nama = nameInput.value.trim().slice(0, 24);
+  const r = ref(db, `userNames/${currentUser.uid}`);
+  try {
+    if (nama) await set(r, { name: nama, at: serverTimestamp() });
+    else await remove(r);
+  } catch (err) {
+    alert("Gagal menyimpan nama: " + (err.code || err.message));
+    sinkronNamaInput();
+  }
+}
+
+// Dipanggil saat daftar admin / daftar nama berubah
+function adminBerubah() {
+  segarkanNama();
+  aturBarisNama();
+}
+
+function namaDaftarBerubah() {
+  segarkanNama();
+  sinkronNamaInput();
+  if (isGoogle(currentUser)) {
+    update(ref(db, `users/${currentUser.uid}`), {
+      name: namaTampil(currentUser),
+    }).catch(() => {});
+  }
+}
+
 // Kalau jatah sudah habis, tolak perubahan nama sejak awal (tanpa memakai jatah)
 nameInput.addEventListener("change", () => {
-  if (isGoogle(currentUser)) return;
+  if (isGoogle(currentUser)) {
+    simpanNamaPengguna();
+    return;
+  }
   const baru = nameInput.value.trim() || "Orang Asing";
-  if (namaTerkirim && baru !== namaTerkirim && statusLimitNama().sisa <= 0) {
+  const dasar = namaDasar();
+  if (dasar && baru !== dasar && statusLimitNama().sisa <= 0) {
     tolakGantiNama();
   }
 });
 
 // ===== PRESENCE =====
+// Catat "saya online" ke users/{uid}. Yang ditulis SELALU record lengkap (nama, online,
+// lastSeen), bukan hanya lastSeen: kalau record sempat terhapus (mis. tab/halaman lama
+// yang ditutup atau di-refresh menghapusnya terlambat), langkah berikutnya otomatis
+// membuatnya lagi, tidak terjebak "offline" sampai halaman dimuat ulang.
+let catatPresence = () => {};
+
 function mulaiPresence(user) {
   clearInterval(heartbeat);
   const userRef = ref(db, `users/${user.uid}`);
-  const nama = isGoogle(user)
-    ? namaTampil(user)
-    : nameInput.value.trim() || "Orang Asing";
 
-  update(userRef, { name: nama, online: true, lastSeen: Date.now() });
-  heartbeat = setInterval(() => {
-    update(userRef, { lastSeen: Date.now() });
-  }, 30000);
+  catatPresence = () => {
+    const nama = (
+      isGoogle(user)
+        ? namaTampil(user)
+        : nameInput.value.trim() || "Orang Asing"
+    ).slice(0, 40);
+    update(userRef, { name: nama, online: true, lastSeen: Date.now() }).catch(
+      () => {},
+    );
+  };
+
+  catatPresence();
+  heartbeat = setInterval(catatPresence, 20000);
 }
+
+// Tab kembali terlihat / jendela kembali aktif: langsung tandai online lagi
+// (timer di tab latar belakang bisa diperlambat browser)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") catatPresence();
+});
+window.addEventListener("focus", () => catatPresence());
 
 window.addEventListener("beforeunload", () => {
   clearInterval(heartbeat);
@@ -1650,7 +2014,7 @@ onAuthStateChanged(auth, (user) => {
   const google = isGoogle(user);
 
   // Akun Google: nama otomatis dari Google, kolom nama disembunyikan, bisa kirim file
-  nameInput.closest(".name-input-wrapper").hidden = google;
+  aturBarisNama();
   attachBtn.hidden = !google;
   if (!google) {
     namaTerkirim = simpan.baca("chatName") || "";
@@ -1658,7 +2022,7 @@ onAuthStateChanged(auth, (user) => {
     lampiran = null;
     tampilkanPreview();
   }
-  loginBtn.textContent = google ? "Logout" : "Login Google";
+  loginBtn.textContent = google ? "Keluar" : "Login Google";
 
   // Akun berganti (login/logout): pasang ulang listener & muat riwayat dari awal,
   // karena listener lama diputus Firebase saat izin bacanya hilang.

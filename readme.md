@@ -186,3 +186,9 @@ Pull request dan saran sangat diterima. Untuk perubahan besar, silakan buka issu
 ## Lisensi
 
 Belum ditentukan. Tambahkan file `LICENSE` jika ingin menentukan lisensi proyek ini.
+
+- **Centang pesan**: pesan sendiri menampilkan ✓ (belum ada pengguna lain online), ✓✓ abu-abu (ada pengguna lain online), dan ✓✓ biru (sudah dibaca pengguna lain). Status baca dicatat per akun di `reads/{uid}` (pesan terakhir yang dilihat).
+
+- **Nama tampilan**: tamu, akun Google biasa, dan admin bisa punya nama sendiri (tidak harus ikut Google). Nama yang disimpan berlaku untuk seluruh riwayat pesan akun itu. Tamu: lewat kolom nama (ada batas ganti nama). Akun Google: kolom nama di atas kolom pesan (kosongkan untuk kembali ke nama Google). Admin: lewat Panel admin. Disimpan di `adminNames/{uid}` (admin) dan `userNames/{uid}` (lainnya).
+
+- **Batas ganti nama tamu per IP**: batas 5x/hari dihitung berdasarkan hash IP publik (diambil dari ipify), jadi ganti browser/perangkat di jaringan yang sama tidak mereset hitungan, dan nama terakhir ikut tersimpan di database. Kalau IP tidak bisa didapat (mis. diblokir ad-blocker), batas jatuh ke ID perangkat. Catatan: jaringan yang dipakai bersama (kampus, kantor, operator seluler) berbagi satu jatah, dan karena IP dilaporkan browser ini bukan keamanan penuh.

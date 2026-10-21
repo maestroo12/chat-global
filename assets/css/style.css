@@ -15,6 +15,7 @@
   --other: #ffffff;
   --text: #1f2933;
   --muted: #6b7785;
+  --tick-read: #1b8fd6;
   --line: #dde2e7;
 
   --surface: #ffffff;
@@ -54,6 +55,7 @@
   --other: #1f2c34;
   --text: #e7edf1;
   --muted: #93a1ad;
+  --tick-read: #53bdeb;
   --line: #26343d;
 
   --surface: #111b21;
@@ -370,6 +372,33 @@ body {
   line-height: 1.4;
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* centang terkirim / sampai / dibaca di samping jam pesan sendiri */
+.ticks {
+  display: inline-flex;
+  margin-left: 4px;
+  vertical-align: -1px;
+  line-height: 0;
+  color: var(--muted);
+}
+
+.ticks svg {
+  width: 17px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ticks:not(.double) .tick-2 {
+  display: none;
+}
+
+.ticks.read {
+  color: var(--tick-read);
 }
 
 .badge {

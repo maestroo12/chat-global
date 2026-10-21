@@ -8,6 +8,8 @@ import {
   query,
   orderByKey,
   limitToFirst,
+  orderByChild,
+  startAt,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
@@ -55,6 +57,14 @@ export function initAdmin({
   // admin di SEMUA pesan mereka (termasuk riwayat lama), jadi ganti nama berlaku
   // surut tanpa mengubah isi pesan. Seperti adminSet, tidak dikosongkan saat ganti akun.
   let namaMap = {};
+
+  // Nama tampilan akun biasa (tamu & Google non-admin), uid -> nama. Hanya yang aktif
+  // dalam 120 hari terakhir dimuat, supaya data tidak membengkak.
+  let userMap = {};
+  const samaPeta = (a, b) => {
+    const ka = Object.keys(a);
+    return ka.length === Object.keys(b).length && ka.every((k) => a[k] === b[k]);
+  };
 
   let adminSet = new Set();
   let adminSiap = false; // daftar admin sudah pernah berhasil dibaca
@@ -444,6 +454,29 @@ export function initAdmin({
       ),
     );
 
+    // Nama tampilan akun biasa: dibaca semua akun
+    stops.push(
+      onValue(
+        query(
+          ref(db, "userNames"),
+          orderByChild("at"),
+          startAt(Date.now() - 120 * 86400000),
+        ),
+        (snap) => {
+          const baru = {};
+          snap.forEach((c) => {
+            const n = c.val()?.name;
+            if (typeof n === "string" && n) baru[c.key] = n;
+          });
+          const sama = samaPeta(baru, userMap);
+          userMap = baru;
+          if (!sama && onNamaDaftarBerubah) onNamaDaftarBerubah();
+        },
+        (err) =>
+          console.warn("Gagal membaca nama pengguna:", err.code || err.message),
+      ),
+    );
+
     // Nama tampilan admin: dibaca semua akun
     stops.push(
       onValue(
@@ -466,8 +499,13 @@ export function initAdmin({
     isAdmin: (uid) => adminSet.has(uid),
     namaTampil: () => (aktif && namaKustom) || null,
     // Nama yang ditampilkan untuk pesan dari uid ini (nama admin terbaru, kalau dia admin)
-    namaUntuk: (uid, namaPesan) =>
-      (uid && adminSet.has(uid) && namaMap[uid]) || namaPesan,
+    namaUntuk: (uid, namaPesan) => {
+      if (!uid) return namaPesan;
+      if (adminSet.has(uid)) return namaMap[uid] || namaPesan;
+      return userMap[uid] || namaPesan;
+    },
+    // Nama tampilan akun biasa (bukan admin) yang tersimpan, atau null
+    namaPengguna: (uid) => userMap[uid] || null,
     namaSiap: () => namaSiap,
     pastikanNama,
     adminSiap: () => adminSiap,

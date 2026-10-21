@@ -29,6 +29,34 @@
       "$other": { ".validate": false }
     },
 
+    "userNames": {
+      ".read": "auth != null",
+      ".indexOn": ["at"],
+
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && !root.child('banned').child(auth.uid).exists()",
+        ".validate": "newData.hasChildren(['name', 'at'])",
+
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24" },
+        "at": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "reads": {
+      ".read": "auth != null",
+      ".indexOn": ["at"],
+
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && !root.child('banned').child(auth.uid).exists()",
+        ".validate": "newData.hasChildren(['key', 'at'])",
+
+        "key": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && newData.val().matches(/^[a-zA-Z0-9_-]+$/)" },
+        "at": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
     "banned": {
       ".read": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && root.child('admins').child(auth.uid).val() === true",
 
@@ -172,6 +200,29 @@
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
         },
         "start": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "anonIp": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && newData.exists()",
+        ".validate": "newData.isString() && newData.val().length >= 16 && newData.val().length <= 128 && newData.val().matches(/^[a-zA-Z0-9_-]+$/)"
+      }
+    },
+
+    "ipNameLimit": {
+      "$ipId": {
+        ".read": "auth != null && root.child('anonIp').child(auth.uid).val() === $ipId",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !root.child('banned').child(auth.uid).exists() && root.child('anonIp').child(auth.uid).val() === $ipId && newData.exists()",
+        ".validate": "newData.hasChildren(['count', 'start', 'last']) && ((!data.exists() && newData.child('count').val() === 0 && newData.child('start').val() === now) || (data.exists() && now >= data.child('start').val() + 86400000 && newData.child('count').val() === 1 && newData.child('start').val() === now) || (data.exists() && now < data.child('start').val() + 86400000 && newData.child('start').val() === data.child('start').val() && newData.child('count').val() === data.child('count').val() + 1 && newData.child('count').val() <= 5))",
+
+        "count": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5"
+        },
+        "start": { ".validate": "newData.isNumber()" },
+        "last": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
         "$other": { ".validate": false }
       }
     },
