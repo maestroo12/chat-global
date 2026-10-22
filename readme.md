@@ -21,6 +21,7 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 - **Hapus pesan**: "Hapus untuk saya" (hanya hilang di layarmu) atau "Hapus untuk semua orang" (isi pesan dihapus, tersisa keterangan "Pesan ini telah dihapus").
 - **Kirim foto dan file** (khusus akun Google). Foto dikecilkan otomatis di browser sebelum dikirim, dan bisa dibuka dalam tampilan penuh (lightbox).
 - **Riwayat pesan**: tombol "Muat pesan lama" membuka hingga 1000 pesan terakhir, 100 pesan per muatan (tidak otomatis saat scroll). Admin bisa menghapus N pesan terlama lewat Panel admin.
+- **Admin: cek profil & atur pengguna** (Panel admin → "Cek & atur pengguna", atau menu pesan → "Cek profil pengirim"). Cari lewat ID lengkap, 3+ huruf awal ID, atau nama. Kartu profil menampilkan nama, jenis akun (Admin/Akun Google/Tamu), status online, bio, 5 pesan terakhir, dan status blokir. Dari kartu yang sama admin bisa mengatur per pengguna: batas pesan per 24 jam, batas ganti nama per 24 jam (tamu), panjang maksimal pesan, dan larangan kirim foto/file. Kolom dikosongkan = pakai bawaan. Pengaturan langsung berlaku dan ditegakkan juga oleh Database Rules.
 - **Indikator online**: jumlah orang yang sedang online tampil di bawah judul.
 - **Mode terang/gelap**: mengikuti setelan perangkat dan bisa diganti manual.
 - **Menu "Yang baru"**: daftar pembaruan dengan titik merah pada tombol lonceng saat ada info baru.
@@ -104,11 +105,24 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | `files/{fileId}`           | Data file sebagai data URL base64 (maks. 512000 byte)                                   | Baca: pengguna login. Tulis: hanya akun Google |
 | `users/{uid}`              | Status online: `name`, `online`, `lastSeen`                                             | Baca: pengguna login. Tulis: pemilik           |
 | `hidden/{uid}/{messageId}` | Pesan yang disembunyikan ("Hapus untuk saya")                                           | Hanya pemilik                                  |
+| `userSettings/{uid}`       | Pengaturan khusus pengguna: `msgLimit`, `nameLimit`, `maxText`, `noFile`, `at`, `by`    | Baca: pemilik dan admin. Tulis: hanya admin    |
+| `userLimit/{uid}`          | Penghitung pesan akun Google yang diberi `msgLimit` (`count`, `start`)                  | Baca: pemilik dan admin. Tulis: pemilik        |
 | `anonDevice/{uid}`         | Pemetaan akun tamu ke ID perangkat                                                      | Hanya pemilik                                  |
 | `deviceLimit/{deviceId}`   | Penghitung pesan tamu (`count`, `start`)                                                | Hanya perangkat terkait                        |
 | `deviceNameLimit/{deviceId}` | Penghitung ganti nama tamu (`count`, `start`)                                           | Hanya perangkat terkait                        |
 
 Aturan di `database.rules.json` memvalidasi tipe dan panjang setiap field, memastikan `uid` sesuai pengirim, hanya mengizinkan pesan dihapus oleh pengirimnya sendiri, dan mencegah tamu mengirim file atau mengklaim status terverifikasi.
+
+### Pengaturan per pengguna (admin)
+
+| Field       | Arti                                         | Bawaan                                  | Berlaku untuk |
+| ----------- | -------------------------------------------- | --------------------------------------- | ------------- |
+| `msgLimit`  | Batas pesan per 24 jam (0 = tidak boleh kirim) | Tamu 30, akun Google tanpa batas        | Tamu dan Google |
+| `nameLimit` | Batas ganti nama per 24 jam                  | 5                                       | Tamu          |
+| `maxText`   | Panjang maksimal satu pesan (1-500)          | 500                                     | Semua         |
+| `noFile`    | `true` = dilarang kirim foto/file            | Boleh (akun Google)                     | Akun Google   |
+
+Catatan: pengaturan melekat pada **ID akun** (uid). Tamu yang menghapus data browser mendapat uid baru, sehingga bawaan berlaku lagi (batas pesan tamu tetap dijaga per perangkat, dan batas ganti nama per IP, seperti sebelumnya). Admin harus mendeploy `database.rules.json` terbaru (`firebase deploy --only database`) agar fitur ini berfungsi dan batasnya ditegakkan di server.
 
 ## Menjalankan secara lokal
 

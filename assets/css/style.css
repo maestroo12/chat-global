@@ -1213,13 +1213,16 @@ button:focus-visible {
 }
 
 #admin-name-form,
-#admin-purge-form {
+#admin-purge-form,
+#admin-cari-form {
   display: flex;
   gap: 8px;
 }
 
 #admin-name-input,
-#admin-purge-input {
+#admin-purge-input,
+#admin-cari-input,
+.admin-num {
   flex: 1;
   min-width: 0;
   padding: 8px 14px;
@@ -1234,7 +1237,9 @@ button:focus-visible {
 }
 
 #admin-name-input:focus,
-#admin-purge-input:focus {
+#admin-purge-input:focus,
+#admin-cari-input:focus,
+.admin-num:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--tint-me);
 }
@@ -1247,6 +1252,161 @@ button:focus-visible {
 
 .admin-act.danger {
   color: var(--danger);
+}
+
+/* Cek & atur pengguna */
+.admin-acts {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-acts-kiri {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+.admin-hint.galat {
+  color: var(--danger);
+}
+
+.admin-kartu {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--btn-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.admin-kartu h4 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-kartu-atas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-kartu-nama {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-chip {
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.admin-chip.admin,
+.admin-chip.biru {
+  color: var(--accent);
+  background: var(--tint);
+  border-color: var(--tint-border);
+}
+
+.admin-chip.hijau {
+  color: var(--tick-read);
+  border-color: currentColor;
+}
+
+.admin-chip.merah {
+  color: var(--danger);
+  border-color: currentColor;
+}
+
+.admin-idbaris {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-id {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-bio {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.admin-bio.kosong {
+  color: var(--muted);
+}
+
+.admin-pesan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-pesan-item {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.admin-pesan-isi {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.admin-pengaturan {
+  margin-top: 4px;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.admin-field-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-num {
+  border-radius: 10px;
+}
+
+.admin-field .admin-hint {
+  margin: 0;
+}
+
+.admin-cek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 4px;
+  font-size: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {

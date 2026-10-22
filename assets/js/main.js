@@ -135,6 +135,7 @@ const sheetBatal = document.getElementById("sheet-batal");
 const sheetReply = document.getElementById("sheet-reply");
 const sheetAdminHapus = document.getElementById("sheet-admin-hapus");
 const sheetAdminBlokir = document.getElementById("sheet-admin-blokir");
+const sheetAdminProfil = document.getElementById("sheet-admin-profil");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightbox-img");
 const replyPreview = document.getElementById("reply-preview");
@@ -242,6 +243,7 @@ const admin = initAdmin({
   },
   onAdminBerubah: adminBerubah,
   onNamaDaftarBerubah: namaDaftarBerubah,
+  onPengaturan: pengaturanBerubah,
   // Nama tampilan admin berubah: samakan nama di daftar online
   onNamaAdmin() {
     if (!isGoogle(currentUser)) return;
@@ -251,6 +253,37 @@ const admin = initAdmin({
   },
   namaDefault: (user) => namaGoogle(user),
 });
+
+// ===== PENGATURAN PER AKUN (diatur admin lewat Panel admin) =====
+// Kosong = pakai bawaan dari LIMITS. Aturan database memakai angka yang sama,
+// jadi pengaturan ini juga ditegakkan di server, bukan hanya di layar.
+const angkaAtau = (v, bawaan) => (Number.isFinite(v) ? v : bawaan);
+const maksPesan = () => angkaAtau(admin.pengaturanSaya().msgLimit, MAX_ANON);
+const maksGantiNama = () =>
+  angkaAtau(admin.pengaturanSaya().nameLimit, MAX_ANON_NAME_CHANGES);
+const maksTeks = () => angkaAtau(admin.pengaturanSaya().maxText, MAX_TEKS);
+const fileDilarang = () => admin.pengaturanSaya().noFile === true;
+// Tamu selalu punya batas pesan; akun Google hanya kalau admin memberinya batas.
+const terbatasPesan = () =>
+  !isGoogle(currentUser) || Number.isFinite(admin.pengaturanSaya().msgLimit);
+
+function pengaturanBerubah() {
+  input.maxLength = maksTeks();
+  if (input.value.length > input.maxLength) {
+    input.value = input.value.slice(0, input.maxLength);
+  }
+  if (fileDilarang() && lampiran) {
+    lampiran = null;
+    tampilkanPreview();
+  }
+  attachBtn.hidden = !isGoogle(currentUser) || fileDilarang();
+  if (currentUser) {
+    pantauSisa(currentUser); // pasang/lepas pemantau batas sesuai pengaturan baru
+    segarkanKirim();
+    terapkanLimitNama();
+  }
+  segarkanPanel();
+}
 
 // Nama akun Google. Kalau profil tidak punya nama, pakai bagian depan email.
 function namaGoogle(user) {
@@ -1319,6 +1352,7 @@ function bukaMenu(key) {
   // Opsi moderasi: hanya tampil untuk admin, pada pesan orang lain
   const bisaModerasi = admin.aktif() && !milikku;
   sheetAdminHapus.hidden = !(bisaModerasi && !data.deleted);
+  sheetAdminProfil.hidden = !(bisaModerasi && data.uid);
   sheetAdminBlokir.hidden = !(
     bisaModerasi &&
     data.uid &&
@@ -1384,6 +1418,14 @@ sheetAdminHapus.addEventListener("click", () => {
   tutupMenu();
   if (data.file?.id) fileCache.delete(data.file.id);
   admin.hapusPesan(key, data);
+});
+
+// Admin: cek profil pengirim (juga untuk mengatur batasnya)
+sheetAdminProfil.addEventListener("click", () => {
+  const data = menuTarget && pesan.get(menuTarget);
+  if (!data?.uid) return;
+  tutupMenu();
+  admin.bukaProfil(data.uid);
 });
 
 // Admin: blokir pengirim pesan
@@ -1598,10 +1640,10 @@ function pastikanPerangkat(user) {
 function statusLimit() {
   const now = Date.now() + serverOffset;
   if (!limitData || now - limitData.start >= DAY_MS) {
-    return { sisa: MAX_ANON };
+    return { sisa: maksPesan() };
   }
   return {
-    sisa: MAX_ANON - limitData.count,
+    sisa: maksPesan() - limitData.count,
     bukaLagi: limitData.start + DAY_MS - now,
   };
 }
@@ -1614,7 +1656,7 @@ function aturTombolKirim() {
     input.placeholder = "Akunmu diblokir admin.";
     return;
   }
-  if (isGoogle(currentUser)) {
+  if (!terbatasPesan()) {
     input.disabled = false;
     sendBtn.disabled = sedangKirim;
     return;
@@ -1626,7 +1668,7 @@ function aturTombolKirim() {
 
 // Dipanggil saat status blokir berubah: pulihkan placeholder yang benar
 function segarkanKirim() {
-  if (isGoogle(currentUser)) {
+  if (!terbatasPesan()) {
     input.placeholder = "Ketik pesan";
     aturTombolKirim();
   } else {
@@ -1635,14 +1677,20 @@ function segarkanKirim() {
 }
 
 function terapkanLimit() {
-  if (isGoogle(currentUser)) return;
+  if (!terbatasPesan()) return;
   const st = statusLimit();
 
   if (st.sisa <= 0) {
-    const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
-    input.placeholder = `Batas tamu habis. Coba lagi ${jam} jam lagi, atau login Google.`;
+    const jam = Math.max(1, Math.ceil((st.bukaLagi ?? DAY_MS) / 3600000));
+    if (maksPesan() <= 0) {
+      input.placeholder = "Akunmu tidak diizinkan mengirim pesan (diatur admin).";
+    } else if (isGoogle(currentUser)) {
+      input.placeholder = `Batas pesanmu habis. Coba lagi ${jam} jam lagi.`;
+    } else {
+      input.placeholder = `Batas tamu habis. Coba lagi ${jam} jam lagi, atau login Google.`;
+    }
   } else {
-    input.placeholder = `Ketik pesan (sisa ${st.sisa} dari ${MAX_ANON})`;
+    input.placeholder = `Ketik pesan (sisa ${st.sisa} dari ${maksPesan()})`;
   }
   aturTombolKirim();
   segarkanPanel();
@@ -1655,8 +1703,18 @@ function pantauSisa(user) {
   limitData = null;
 
   if (isGoogle(user)) {
-    input.placeholder = "Ketik pesan";
-    aturTombolKirim();
+    if (!terbatasPesan()) {
+      input.placeholder = "Ketik pesan";
+      aturTombolKirim();
+      return;
+    }
+    // Akun Google yang diberi batas pesan oleh admin: hitungan per akun
+    stopPantauSisa = onValue(ref(db, `userLimit/${user.uid}`), (snap) => {
+      limitData = snap.val();
+      terapkanLimit();
+    });
+    timerLimit = setInterval(terapkanLimit, 60000);
+    terapkanLimit();
     return;
   }
 
@@ -1677,15 +1735,22 @@ function pantauSisa(user) {
 
 // Menambahkan penghitung limit ke dalam penulisan pesan. Mengembalikan false kalau jatah habis.
 async function tambahkanLimitTamu(updates) {
-  const dev = await pastikanPerangkat(currentUser);
-  const path = `deviceLimit/${dev}`;
+  // Tamu: hitungan per perangkat. Akun Google yang dibatasi admin: per akun.
+  const path = isGoogle(currentUser)
+    ? `userLimit/${currentUser.uid}`
+    : `deviceLimit/${await pastikanPerangkat(currentUser)}`;
+  if (maksPesan() <= 0) {
+    limitData = null;
+    terapkanLimit();
+    return false;
+  }
   const snap = await get(ref(db, path));
   const lim = snap.val();
   const now = Date.now() + serverOffset;
 
   if (!lim || now - lim.start >= DAY_MS) {
     updates[path] = { count: 1, start: serverTimestamp() };
-  } else if (lim.count >= MAX_ANON) {
+  } else if (lim.count >= maksPesan()) {
     limitData = lim;
     terapkanLimit();
     return false;
@@ -1744,10 +1809,10 @@ function namaDasar() {
 function statusLimitNama() {
   const now = Date.now() + serverOffset;
   if (!nameChangeData || now - nameChangeData.start >= DAY_MS) {
-    return { sisa: MAX_ANON_NAME_CHANGES };
+    return { sisa: maksGantiNama() };
   }
   return {
-    sisa: MAX_ANON_NAME_CHANGES - nameChangeData.count,
+    sisa: maksGantiNama() - nameChangeData.count,
     bukaLagi: nameChangeData.start + DAY_MS - now,
   };
 }
@@ -1785,7 +1850,7 @@ function terapkanLimitNama() {
     const jam = Math.max(1, Math.ceil(st.bukaLagi / 3600000));
     info.textContent = `Batas ganti nama habis. Coba lagi ${jam} jam lagi.`;
   } else {
-    info.textContent = `Sisa ganti nama: ${st.sisa} dari ${MAX_ANON_NAME_CHANGES} hari ini`;
+    info.textContent = `Sisa ganti nama: ${st.sisa} dari ${maksGantiNama()} hari ini`;
   }
   segarkanPanel();
 }
@@ -1809,7 +1874,7 @@ async function tambahkanLimitNamaChange(updates, name) {
       updates[k.path] = { count: 1, start: serverTimestamp(), last: name };
       return true;
     }
-    if (lim.count >= MAX_ANON_NAME_CHANGES) {
+    if (lim.count >= maksGantiNama()) {
       nameChangeData = lim;
       terapkanLimitNama();
       return false;
@@ -1822,7 +1887,7 @@ async function tambahkanLimitNamaChange(updates, name) {
   if (!namaTerkirim || name === namaTerkirim) return true;
   if (!lim || now - lim.start >= DAY_MS) {
     updates[k.path] = { count: 1, start: serverTimestamp() };
-  } else if (lim.count >= MAX_ANON_NAME_CHANGES) {
+  } else if (lim.count >= maksGantiNama()) {
     nameChangeData = lim;
     terapkanLimitNama();
     return false;
@@ -1836,7 +1901,7 @@ async function tambahkanLimitNamaChange(updates, name) {
 async function kirimPesan() {
   if (sedangKirim || !currentUser || diblokir) return;
   const text = input.value.trim();
-  const adaFile = !!lampiran && isGoogle(currentUser);
+  const adaFile = !!lampiran && isGoogle(currentUser) && !fileDilarang();
   if (!text && !adaFile) return;
 
   const targetBalasan = replyTarget;
@@ -1902,6 +1967,9 @@ async function kirimPesan() {
 
       if (google) {
         data.verified = true;
+        if (terbatasPesan() && !(await tambahkanLimitTamu(updates))) {
+          return; // batas pesan dari admin habis, pesan tidak dikirim
+        }
         if (adaFile) {
           const fid = push(ref(db, "files")).key;
           updates[`files/${fid}`] = {
@@ -1938,7 +2006,11 @@ async function kirimPesan() {
         await update(ref(db), updates);
         berhasil = true;
       } catch (err) {
-        if (percobaan === 1 || google || err.code !== "PERMISSION_DENIED")
+        if (
+          percobaan === 1 ||
+          (google && !terbatasPesan()) ||
+          err.code !== "PERMISSION_DENIED"
+        )
           throw err;
       }
     }
@@ -2209,10 +2281,10 @@ function belumBaca() {
 
 function infoLimit() {
   return {
-    pesan: { sisa: Math.max(0, statusLimit().sisa), maks: MAX_ANON },
+    pesan: { sisa: Math.max(0, statusLimit().sisa), maks: maksPesan() },
     nama: {
       sisa: Math.max(0, statusLimitNama().sisa),
-      maks: MAX_ANON_NAME_CHANGES,
+      maks: maksGantiNama(),
     },
   };
 }
@@ -2299,7 +2371,7 @@ onAuthStateChanged(auth, (user) => {
 
   // Akun Google: nama otomatis dari Google, kolom nama disembunyikan, bisa kirim file
   aturBarisNama();
-  attachBtn.hidden = !google;
+  attachBtn.hidden = !google || fileDilarang();
   if (!google) {
     namaTerkirim = simpan.baca("chatName") || "";
     nameInput.value = namaTerkirim;

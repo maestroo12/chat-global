@@ -367,6 +367,10 @@
           <span>Hapus pesan (admin)</span>
           <small>Hapus pesan ini untuk semua orang.</small>
         </button>
+        <button id="sheet-admin-profil" type="button" hidden>
+          <span>Cek profil pengirim (admin)</span>
+          <small>Lihat profil, atur batas chat dan ganti nama.</small>
+        </button>
         <button id="sheet-admin-blokir" type="button" class="danger" hidden>
           <span>Blokir pengirim (admin)</span>
           <small>Pengirim tidak bisa mengirim pesan lagi.</small>
@@ -406,6 +410,28 @@
           <button id="admin-close" type="button" aria-label="Tutup">×</button>
         </div>
         <div id="admin-body">
+          <section class="admin-section">
+            <h3>Cek &amp; atur pengguna</h3>
+            <form id="admin-cari-form">
+              <input
+                type="text"
+                id="admin-cari-input"
+                maxlength="60"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="ID pengguna atau nama"
+                aria-label="Cari pengguna lewat ID atau nama"
+              />
+              <button type="submit" class="admin-act">Cek</button>
+            </form>
+            <p id="admin-cari-hint" class="admin-hint" role="status">
+              Tempel ID lengkap, atau ketik 3+ huruf awal ID / nama. Atur batas
+              pesan, ganti nama, dan lainnya per pengguna.
+            </p>
+            <div id="admin-cari-pilihan" class="admin-acts admin-acts-kiri"></div>
+            <div id="admin-profil" class="admin-kartu" hidden></div>
+          </section>
           <section class="admin-section">
             <h3>Nama tampilan</h3>
             <form id="admin-name-form">

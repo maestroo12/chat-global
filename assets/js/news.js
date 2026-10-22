@@ -5,6 +5,15 @@ import { formatUkuran } from "./utils.js";
 // berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
 export const NEWS = [
   {
+    id: "2026-10-22-admin-pengguna",
+    date: "22 Okt 2026",
+    title: "Admin: cek profil & atur pengguna",
+    points: [
+      "Admin bisa cek profil siapa pun lewat ID atau nama di Panel admin, atau lewat menu pesan.",
+      "Admin bisa mengatur batas pesan per 24 jam, batas ganti nama, panjang maksimal pesan, dan izin kirim file untuk tiap pengguna.",
+    ],
+  },
+  {
     id: "2026-10-21-panel",
     date: "21 Okt 2026",
     title: "Beranda & Profil",

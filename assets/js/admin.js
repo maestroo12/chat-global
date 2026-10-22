@@ -12,6 +12,7 @@ import {
   startAt,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
+import { initPengguna } from "./admin-pengguna.js";
 
 const ONLINE_MS = 60000;
 
@@ -21,6 +22,7 @@ export function initAdmin({
   onAdminBerubah,
   onNamaAdmin,
   onNamaDaftarBerubah,
+  onPengaturan,
   namaDefault,
 }) {
   const btn = document.getElementById("admin-btn");
@@ -66,6 +68,10 @@ export function initAdmin({
     return ka.length === Object.keys(b).length && ka.every((k) => a[k] === b[k]);
   };
 
+  // Pengaturan khusus untuk akun yang sedang login (userSettings/{uid}), diatur admin:
+  // msgLimit, nameLimit, maxText, noFile. Kosong = pakai bawaan aplikasi.
+  let pengaturan = {};
+
   let adminSet = new Set();
   let adminSiap = false; // daftar admin sudah pernah berhasil dibaca
 
@@ -108,7 +114,14 @@ export function initAdmin({
     info.append(n, s);
 
     li.appendChild(info);
-    if (aksi) li.appendChild(aksi);
+    const daftarAksi = [aksi].flat().filter(Boolean);
+    if (daftarAksi.length === 1) li.appendChild(daftarAksi[0]);
+    else if (daftarAksi.length) {
+      const wadah = document.createElement("span");
+      wadah.className = "admin-acts";
+      wadah.append(...daftarAksi);
+      li.appendChild(wadah);
+    }
     return li;
   }
 
@@ -125,11 +138,13 @@ export function initAdmin({
 
     for (const [uid, u] of daftar) {
       const saya = uid === user?.uid;
-      let aksi = null;
+      const aksi = [buatTombol("Cek", false, () => bukaProfil(uid))];
       if (!saya) {
-        aksi = bannedData[uid]
-          ? buatTag("Diblokir")
-          : buatTombol("Blokir", true, () => blokir(uid, u.name));
+        aksi.push(
+          bannedData[uid]
+            ? buatTag("Diblokir")
+            : buatTombol("Blokir", true, () => blokir(uid, u.name)),
+        );
       }
       frag.appendChild(
         buatBaris(
@@ -165,7 +180,10 @@ export function initAdmin({
         buatBaris(
           b?.name || "Tanpa nama",
           sub,
-          buatTombol("Buka blokir", false, () => bukaBlokir(uid)),
+          [
+            buatTombol("Cek", false, () => bukaProfil(uid)),
+            buatTombol("Buka blokir", false, () => bukaBlokir(uid)),
+          ],
         ),
       );
     }
@@ -175,6 +193,7 @@ export function initAdmin({
   function render() {
     renderOnline();
     renderBanned();
+    pengguna.segarkan();
   }
 
   // ===== Aksi =====
@@ -222,6 +241,36 @@ export function initAdmin({
     } catch (err) {
       alert("Gagal menghapus (admin): " + (err.code || err.message));
     }
+  }
+
+  // ===== Cek profil & atur pengguna (admin-pengguna.js) =====
+  const pengguna = initPengguna({
+    db,
+    aktif: () => aktif,
+    user: () => user,
+    users: () => usersData,
+    banned: () => bannedData,
+    isAdmin: (uid) => adminSet.has(uid),
+    namaUntuk: (uid, namaPesan) => namaUntuk(uid, namaPesan),
+    // uid -> nama untuk semua akun yang dikenal klien (dipakai pencarian)
+    daftarKenal() {
+      const peta = new Map();
+      for (const [uid, u] of Object.entries(usersData)) peta.set(uid, u?.name || "");
+      for (const [uid, b] of Object.entries(bannedData)) if (!peta.get(uid)) peta.set(uid, b?.name || "");
+      for (const uid of adminSet) peta.set(uid, namaMap[uid] || peta.get(uid) || "");
+      for (const [uid, n] of Object.entries(userMap)) peta.set(uid, n);
+      return peta;
+    },
+    blokir: (uid, nama) => blokir(uid, nama),
+    bukaBlokir: (uid) => bukaBlokir(uid),
+  });
+
+  function bukaProfil(uid) {
+    if (!aktif) return;
+    render();
+    isiFormNama();
+    panel.hidden = false;
+    pengguna.buka(uid);
   }
 
   // ===== Nama tampilan admin =====
@@ -323,11 +372,18 @@ export function initAdmin({
   // ===== Panel =====
   function tutup() {
     panel.hidden = true;
+    pengguna.tutup();
   }
 
   function isiFormNama() {
     nameField.value = namaKustom || "";
     nameField.placeholder = (user && namaDefault && namaDefault(user)) || "Nama";
+  }
+
+  function namaUntuk(uid, namaPesan) {
+    if (!uid) return namaPesan;
+    if (adminSet.has(uid)) return namaMap[uid] || namaPesan;
+    return userMap[uid] || namaPesan;
   }
 
   btn.addEventListener("click", () => {
@@ -429,6 +485,7 @@ export function initAdmin({
   function setUser(u) {
     bersihkan();
     user = u;
+    pengaturan = {};
     onDiblokir(false);
     if (!u) return;
 
@@ -438,6 +495,24 @@ export function initAdmin({
         ref(db, `banned/${u.uid}`),
         (snap) => onDiblokir(snap.exists()),
         (err) => console.error("Gagal membaca status blokir:", err),
+      ),
+    );
+
+    // Pengaturan khusus akun ini (batas pesan/ganti nama, dst.) yang diatur admin.
+    // Snapshot pertama selalu memanggil onPengaturan, supaya klien menerapkan bawaan.
+    pengaturan = {};
+    stops.push(
+      onValue(
+        ref(db, `userSettings/${u.uid}`),
+        (snap) => {
+          if (user?.uid !== u.uid) return;
+          pengaturan = snap.val() || {};
+          if (onPengaturan) onPengaturan();
+        },
+        (err) => {
+          console.warn("Gagal membaca pengaturan akun:", err.code || err.message);
+          if (user?.uid === u.uid && onPengaturan) onPengaturan();
+        },
       ),
     );
 
@@ -499,11 +574,7 @@ export function initAdmin({
     isAdmin: (uid) => adminSet.has(uid),
     namaTampil: () => (aktif && namaKustom) || null,
     // Nama yang ditampilkan untuk pesan dari uid ini (nama admin terbaru, kalau dia admin)
-    namaUntuk: (uid, namaPesan) => {
-      if (!uid) return namaPesan;
-      if (adminSet.has(uid)) return namaMap[uid] || namaPesan;
-      return userMap[uid] || namaPesan;
-    },
+    namaUntuk,
     // Nama tampilan akun biasa (bukan admin) yang tersimpan, atau null
     namaPengguna: (uid) => userMap[uid] || null,
     namaSiap: () => namaSiap,
@@ -511,5 +582,7 @@ export function initAdmin({
     adminSiap: () => adminSiap,
     hapusPesan,
     blokir,
+    bukaProfil,
+    pengaturanSaya: () => pengaturan,
   };
 }
