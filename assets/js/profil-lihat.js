@@ -5,14 +5,17 @@ import {
 import { el, buatAvatar, waktuRingkas } from "./ui.js";
 import { muatFoto, urlFoto } from "./foto.js";
 
+// Profil orang lain, HANYA LIHAT. Terbuka saat foto profil seseorang diketuk
+// (di chat, Beranda, dan daftar online), untuk siapa pun: admin, user, maupun tamu.
+// Mengubah foto orang lain hanya bisa lewat Panel admin, bukan dari sini.
 export function initProfilLihat(ctx) {
   const wadah = document.getElementById("profil-lihat");
   const body = document.getElementById("lihat-body");
   const tutupBtn = document.getElementById("lihat-close");
   const lightbox = document.getElementById("lightbox");
 
-  let seq = 0;
-  let pemicu = null;
+  let seq = 0; // supaya hasil muat yang lama tidak menimpa yang baru
+  let pemicu = null; // elemen yang diketuk, fokus dikembalikan ke sini saat ditutup
 
   function tutup() {
     if (wadah.hidden) return;
@@ -50,30 +53,21 @@ export function initProfilLihat(ctx) {
     const tampilNama = ctx.namaUntuk(uid, nama) || nama || "Tanpa nama";
     const pasti = admin ? true : verified;
 
-    const avatar = buatAvatar(tampilNama, uid, {
-      ukuran: "xl",
-      verified: pasti,
-    });
+    const avatar = buatAvatar(tampilNama, uid, { ukuran: "xl", verified: pasti });
     const avatarBox = el("div", { class: "lihat-avatar" }, avatar);
     avatarBox.addEventListener("click", () => {
       const url = urlFoto(uid);
       if (url) ctx.bukaFoto(url);
     });
 
-    const chip = el("span", {
-      class: "chip" + (admin ? " admin" : ""),
-      text: admin ? "Admin" : "Memuat...",
-    });
+    const chip = el("span", { class: "chip" + (admin ? " admin" : ""), text: admin ? "Admin" : "Memuat..." });
     const status = barisStatus();
     isiStatus(status, uid);
     const bioEl = el("p", { class: "profil-bio kosong", hidden: true });
 
     const isi = [
       avatarBox,
-      el("h3", {
-        class: "profil-nama",
-        text: tampilNama + (kamu ? " (kamu)" : ""),
-      }),
+      el("h3", { class: "profil-nama", text: tampilNama + (kamu ? " (kamu)" : "") }),
       chip,
       status,
       bioEl,
@@ -95,6 +89,7 @@ export function initProfilLihat(ctx) {
     wadah.hidden = false;
     tutupBtn.focus();
 
+    // Ambil foto & bio terbaru (selalu segar, bukan dari cache)
     const [url, bioSnap] = await Promise.all([
       muatFoto(uid, { segar: true }),
       get(ref(ctx.db, `profiles/${uid}`)).catch(() => null),
@@ -103,16 +98,11 @@ export function initProfilLihat(ctx) {
 
     const bio = bioSnap?.val()?.bio || "";
     const google = admin || pasti === true || !!bio || !!url;
-    const jenis = admin
-      ? "Admin"
-      : google
-        ? "Akun Google"
-        : pasti === false
-          ? "Tamu"
-          : "Pengguna";
+    const jenis = admin ? "Admin" : google ? "Akun Google" : pasti === false ? "Tamu" : "Pengguna";
     chip.textContent = jenis;
     avatarBox.classList.toggle("zoom", !!url);
 
+    // Tamu tidak punya bio; akun Google selalu menampilkan bio (atau keterangan kosong)
     bioEl.hidden = jenis === "Tamu";
     bioEl.textContent = bio || "Belum ada bio.";
     bioEl.classList.toggle("kosong", !bio);
