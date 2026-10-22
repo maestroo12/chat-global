@@ -2212,10 +2212,26 @@ async function akhiriPresence() {
   catatPresence = () => {};
   if (lama) {
     await Promise.allSettled([onDisconnect(lama).cancel(), remove(lama)]);
+    // Pastikan benar-benar terhapus (coba sekali lagi kalau gagal)
+    await remove(lama).catch((err) => {
+      console.warn("Gagal menghapus catatan online lama:", err.code || err.message);
+    });
   }
   return () => {
     if (user && currentUser === user) mulaiPresence(user);
   };
+}
+
+// Pengaman untuk SEMUA jalur ganti akun (tombol login/keluar, redirect HP, sesi habis):
+// Firebase menunggu fungsi ini selesai SEBELUM akun benar-benar berganti, jadi catatan
+// online akun lama dihapus selagi masih punya izin. Dengan begini tidak ada lagi akun
+// "hantu" yang tersisa menambah hitungan online.
+try {
+  auth.beforeAuthStateChanged(async (berikut) => {
+    if (presenceRef && berikut?.uid !== currentUser?.uid) await akhiriPresence();
+  });
+} catch (err) {
+  console.warn("beforeAuthStateChanged tidak tersedia:", err);
 }
 
 // Tab kembali terlihat / jendela kembali aktif: langsung tandai online lagi
