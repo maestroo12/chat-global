@@ -240,8 +240,14 @@ body {
 
 .msg {
   display: flex;
+  align-items: flex-start;
+  gap: 8px;
   max-width: 82%;
   align-self: flex-start;
+}
+
+.msg > .avatar {
+  margin-top: 2px;
 }
 
 .msg.me {
@@ -1054,6 +1060,135 @@ button:focus-visible {
   }
 }
 
+/* ---------- Foto profil & profil orang lain ---------- */
+.avatar.bisa-buka {
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.avatar.bisa-buka:hover {
+  box-shadow: 0 0 0 3px var(--tint-me);
+}
+
+.avatar.bisa-buka:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.profil-foto-aksi {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profil-foto-aksi[hidden] {
+  display: none;
+}
+
+.btn.kecil {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.profil-kartu .kabar:empty,
+.admin-identitas .kabar:empty {
+  display: none;
+}
+
+.profil-kartu .kabar,
+.admin-identitas .kabar {
+  max-width: 100%;
+  text-align: center;
+}
+
+#profil-lihat {
+  position: fixed;
+  inset: 0;
+  z-index: 56;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 601px) {
+  #profil-lihat {
+    align-items: center;
+  }
+}
+
+#profil-lihat .news-panel {
+  max-width: 380px;
+}
+
+#lihat-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#lihat-close:hover {
+  background: var(--soft);
+}
+
+#lihat-close:focus-visible {
+  outline-color: var(--accent);
+}
+
+#lihat-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: center;
+}
+
+.lihat-avatar {
+  margin-bottom: 4px;
+}
+
+.lihat-avatar.zoom .avatar {
+  cursor: zoom-in;
+}
+
+.lihat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.lihat-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--disabled);
+  border-radius: 50%;
+}
+
+.lihat-dot.aktif {
+  background: #22a06b;
+}
+
+.lihat-aksi {
+  margin-top: 8px;
+}
+
 /* ---------- Panel admin ---------- */
 #admin-btn {
   position: relative;
@@ -1090,6 +1225,22 @@ button:focus-visible {
   }
 }
 
+/* Kerangka: header tetap, isi bisa digulir, tinggi tidak melompat-lompat */
+#admin-panel .news-panel {
+  max-width: 540px;
+  height: min(90vh, 760px);
+  height: min(90dvh, 760px);
+  max-height: none;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#admin-panel .news-top {
+  padding: 12px 10px 12px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
 #admin-close {
   display: grid;
   flex-shrink: 0;
@@ -1117,41 +1268,61 @@ button:focus-visible {
 }
 
 #admin-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 4px 16px 16px;
+  padding: 16px;
 }
 
-.admin-section+.admin-section {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+/* Tiap bagian = satu kartu, sama seperti kartu di halaman Profil */
+.admin-section {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.admin-section-bahaya {
+  border-left: 4px solid var(--danger);
 }
 
 .admin-section h3 {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   font-size: 15px;
   font-weight: 600;
 }
 
 .admin-count {
-  padding: 1px 8px;
+  min-width: 24px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 600;
+  text-align: center;
   color: var(--accent);
-  background: var(--tint);
+  background: var(--tint-me);
   border-radius: 999px;
 }
 
+/* Daftar (online / diblokir) */
 .admin-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 232px;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
 }
 
@@ -1160,9 +1331,14 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 10px;
-  background: var(--btn-soft);
+  padding: 10px 12px;
+  background: var(--panel);
   border-radius: 10px;
+}
+
+.admin-row .admin-act {
+  padding: 6px 14px;
+  font-size: 13px;
 }
 
 .admin-info {
@@ -1195,66 +1371,99 @@ button:focus-visible {
   color: var(--muted);
 }
 
+/* Tombol */
 .admin-act {
+  display: inline-flex;
   flex-shrink: 0;
-  padding: 6px 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--btn-soft);
+  border: 0;
   border-radius: 999px;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .admin-act:hover {
   background: var(--btn-soft-hover);
 }
 
-#admin-name-form,
-#admin-purge-form,
-#admin-cari-form {
-  display: flex;
-  gap: 8px;
+button[type="submit"].admin-act {
+  color: #fff;
+  background: var(--teal);
 }
 
-#admin-name-input,
-#admin-purge-input,
-#admin-cari-input,
-.admin-num {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 14px;
-  font: inherit;
-  font-size: 16px;
-  /* cegah auto-zoom di iOS */
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  outline: none;
-}
-
-#admin-name-input:focus,
-#admin-purge-input:focus,
-#admin-cari-input:focus,
-.admin-num:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--tint-me);
-}
-
-.admin-hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--muted);
+button[type="submit"].admin-act:hover {
+  background: var(--teal-dark);
 }
 
 .admin-act.danger {
   color: var(--danger);
 }
 
-/* Cek & atur pengguna */
+button[type="submit"].admin-act.danger {
+  color: #fff;
+  background: var(--danger);
+}
+
+button[type="submit"].admin-act.danger:hover {
+  background: var(--danger);
+  filter: brightness(0.92);
+}
+
+/* Form satu baris: kolom isian + tombol, tingginya sama */
+#admin-name-form,
+#admin-purge-form,
+#admin-cari-form {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+#admin-name-input,
+#admin-purge-input,
+#admin-cari-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 16px;
+  /* cegah auto-zoom di iOS */
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+#admin-name-input:focus,
+#admin-purge-input:focus,
+#admin-cari-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--tint-me);
+}
+
+.admin-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.admin-hint:empty {
+  display: none;
+}
+
+.admin-hint.galat {
+  color: var(--danger);
+}
+
 .admin-acts {
   display: flex;
   flex-shrink: 0;
@@ -1263,102 +1472,124 @@ button:focus-visible {
 }
 
 .admin-acts-kiri {
-  margin-top: 8px;
+  margin-top: 10px;
   justify-content: flex-start;
 }
 
-.admin-hint.galat {
-  color: var(--danger);
+.admin-acts-kiri:empty {
+  display: none;
 }
 
+/* ----- Kartu profil orang lain (susunannya sama seperti Profil sendiri) ----- */
 .admin-kartu {
-  margin-top: 10px;
-  padding: 12px;
-  background: var(--btn-soft);
-  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-kartu[hidden] {
+  display: none;
+}
+
+.admin-blok {
+  min-width: 0;
+  padding: 16px;
+  background: var(--panel);
   border-radius: 12px;
 }
 
-.admin-kartu h4 {
-  margin: 12px 0 6px;
-  font-size: 13px;
+.admin-blok h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
   font-weight: 600;
 }
 
-.admin-kartu-atas {
+.admin-identitas {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
 }
 
-.admin-kartu-nama {
+.admin-identitas .avatar.xl {
+  width: 84px;
+  height: 84px;
+  margin-bottom: 4px;
+  font-size: 30px;
+}
+
+.admin-blok .admin-kartu-nama {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .admin-chips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
 }
 
-.admin-chip {
-  padding: 2px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
+.admin-chips:empty {
+  display: none;
+}
+
+.admin-blok .chip {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
 }
 
-.admin-chip.admin,
-.admin-chip.biru {
-  color: var(--accent);
-  background: var(--tint);
-  border-color: var(--tint-border);
+.admin-blok .chip.admin {
+  background: var(--tint-me);
 }
 
-.admin-chip.hijau {
-  color: var(--tick-read);
-  border-color: currentColor;
-}
-
-.admin-chip.merah {
+.admin-blok .chip.merah {
   color: var(--danger);
-  border-color: currentColor;
-}
-
-.admin-idbaris {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.admin-id {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  color: var(--muted);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 .admin-bio {
-  margin: 8px 0 0;
+  width: 100%;
+  margin: 6px 0 0;
+  padding-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--line);
   overflow-wrap: anywhere;
-  font-size: 13px;
 }
 
 .admin-bio.kosong {
   color: var(--muted);
 }
 
+.admin-blok .info-row dd {
+  justify-content: flex-end;
+}
+
+.admin-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--disabled);
+  border-radius: 50%;
+}
+
+.admin-dot.aktif {
+  background: #22a06b;
+}
+
 .admin-pesan {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1367,46 +1598,76 @@ button:focus-visible {
 .admin-pesan-item {
   display: flex;
   flex-direction: column;
-  padding: 6px 8px;
-  background: var(--surface);
-  border-radius: 8px;
+  gap: 2px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.admin-pesan-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.admin-pesan-item:last-child {
+  padding-bottom: 0;
 }
 
 .admin-pesan-isi {
+  font-size: 14px;
+  line-height: 1.4;
   overflow-wrap: anywhere;
-  font-size: 13px;
 }
 
-.admin-pengaturan {
-  margin-top: 4px;
+.admin-blok .field input {
+  background: var(--surface);
 }
 
-.admin-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-.admin-field-label {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.admin-num {
-  border-radius: 10px;
-}
-
-.admin-field .admin-hint {
-  margin: 0;
+.admin-blok .field {
+  margin-bottom: 14px;
 }
 
 .admin-cek {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.admin-cek input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--teal);
+}
+
+.admin-blok .hint {
+  margin: 14px 0 0;
+}
+
+.admin-blok .hint:empty {
+  display: none;
+}
+
+.admin-aksi {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin: 2px 0 4px;
-  font-size: 13px;
+}
+
+.admin-slot {
+  display: contents;
+}
+
+.btn.danger,
+.btn.biasa.danger {
+  color: var(--danger);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -49,11 +49,14 @@ import { initAdmin } from "./admin.js";
 import { initNav } from "./nav.js";
 import { initBeranda } from "./beranda.js";
 import { initProfil } from "./profil.js";
-import { fotoAkun } from "./ui.js";
+import { fotoAkun, buatAvatar } from "./ui.js";
+import { initFoto, kosongkanFoto } from "./foto.js";
+import { initProfilLihat } from "./profil-lihat.js";
 
 // ===== INIT =====
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+initFoto(db);
 const chatRef = ref(db, "chat");
 const usersRef = ref(db, "users");
 const auth = getAuth(app);
@@ -920,6 +923,16 @@ function buatElemen(key, data) {
     if (e.key === "Enter") bukaMenu(key);
   });
 
+  // Foto profil pengirim di samping gelembung (pesan sendiri tidak perlu). Ketuk = lihat profil.
+  if (!isMe) {
+    msg.appendChild(
+      buatAvatar(admin.namaUntuk(data.uid, data.name), data.uid, {
+        ukuran: "sm",
+        buka: !!data.uid,
+        verified: !!data.verified,
+      }),
+    );
+  }
   msg.appendChild(bubble);
   return msg;
 }
@@ -2258,6 +2271,7 @@ function pesanTerbaru(jumlah) {
     hasil.push({
       key,
       uid: d.uid,
+      verified: !!d.verified,
       nama: namaPengirim(d),
       teks: ringkasanPesan(d),
       ts: d.timestamp,
@@ -2337,6 +2351,21 @@ const profil = initProfil({
   bukaAdmin: () => document.getElementById("admin-btn").click(),
 });
 
+// Profil orang lain (hanya lihat), terbuka saat foto profil diketuk
+initProfilLihat({
+  db,
+  user: () => currentUser,
+  isAdmin: (uid) => admin.isAdmin(uid),
+  namaUntuk: (uid, nama) => admin.namaUntuk(uid, nama),
+  online: (uid) => {
+    const u = dataUsers?.[uid];
+    const lastSeen = u?.lastSeen || 0;
+    return { online: !!lastSeen && Date.now() - lastSeen < ONLINE_MS, lastSeen };
+  },
+  bukaFoto: bukaLightbox,
+  keProfil: () => nav.pindah("profil"),
+});
+
 panelApi.render = () => {
   if (!currentUser) return;
   nav.setBadge("chat", panelAktif === "chat" ? 0 : belumBaca());
@@ -2385,6 +2414,7 @@ onAuthStateChanged(auth, (user) => {
     hentikanListener();
     resetRiwayat();
     uidChat = user.uid;
+    kosongkanFoto();
     profil.setUser(user);
   }
   mulaiListener();

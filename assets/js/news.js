@@ -5,6 +5,16 @@ import { formatUkuran } from "./utils.js";
 // berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
 export const NEWS = [
   {
+    id: "2026-10-22-foto-profil",
+    date: "22 Okt 2026",
+    title: "Foto profil",
+    points: [
+      "Akun Google (User dan Admin) bisa ganti atau hapus foto profil lewat menu Profil. Tamu tidak bisa.",
+      "Foto tampil di samping pesan, di Beranda, dan di daftar online. Siapa pun, termasuk tamu, bisa ketuk foto orang untuk melihat profilnya.",
+      "Profil orang lain hanya bisa dilihat. Admin yang mau ganti atau hapus foto seseorang lewat Panel admin, bagian Cek & atur pengguna.",
+    ],
+  },
+  {
     id: "2026-10-22-admin-pengguna",
     date: "22 Okt 2026",
     title: "Admin: cek profil & atur pengguna",

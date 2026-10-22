@@ -101,7 +101,9 @@ export function initNav({ onPindah } = {}) {
     const kunci = [nama, uid, foto].join("|");
     if (kunci !== akunKunci) {
       akunKunci = kunci;
-      akunAvatar.replaceChildren(buatAvatar(nama, uid, { ukuran: "sm", foto }));
+      akunAvatar.replaceChildren(
+        buatAvatar(nama, uid, { ukuran: "sm", foto, verified: status !== "anon" }),
+      );
     }
     akunNama.textContent = nama || "Tamu";
     akunStatus.textContent =

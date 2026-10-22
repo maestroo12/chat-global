@@ -6,6 +6,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 import { el, buatAvatar, fotoAkun, tanggalPanjang } from "./ui.js";
+import { kecilkanFoto, simpanFoto, hapusFoto, urlFoto, pantauFoto } from "./foto.js";
 
 const MAKS_BIO = 140;
 const MAKS_NAMA = 24;
@@ -51,6 +52,12 @@ export function initProfil(ctx) {
   const adminBaris = $("profil-admin-baris");
   const akunBtn = $("profil-akun-btn");
   const akunInfo = $("profil-akun-info");
+
+  const fotoAksi = $("profil-foto-aksi");
+  const fotoGanti = $("profil-foto-ganti");
+  const fotoHapus = $("profil-foto-hapus");
+  const fotoFile = $("profil-foto-file");
+  const fotoKabar = $("profil-foto-kabar");
 
   let stopBio = null;
   let bio = "";
@@ -136,6 +143,70 @@ export function initProfil(ctx) {
     }
   });
 
+  // ===== Foto profil (khusus akun Google; tamu tidak punya foto) =====
+  let fotoSibuk = false;
+
+  function kabarFoto(teks, galat = false) {
+    fotoKabar.textContent = teks;
+    fotoKabar.classList.toggle("galat", galat);
+  }
+
+  function pesanGalatFoto(err) {
+    return err.code === "PERMISSION_DENIED"
+      ? "Tidak diizinkan. Pastikan database.rules.json terbaru sudah di-deploy dan akunmu tidak diblokir."
+      : err.message || "Gagal menyimpan foto.";
+  }
+
+  function aturTombolFoto() {
+    fotoGanti.disabled = fotoSibuk;
+    fotoHapus.disabled = fotoSibuk;
+  }
+
+  fotoGanti.addEventListener("click", () => fotoFile.click());
+
+  fotoFile.addEventListener("change", async () => {
+    const file = fotoFile.files[0];
+    fotoFile.value = "";
+    const user = ctx.user();
+    if (!file || !user || user.isAnonymous || fotoSibuk) return;
+    fotoSibuk = true;
+    aturTombolFoto();
+    kabarFoto("Memproses foto...");
+    try {
+      const data = await kecilkanFoto(file);
+      await simpanFoto(user.uid, data, user.uid);
+      kabarFoto("Foto profil diperbarui.");
+    } catch (err) {
+      console.error("Gagal mengganti foto:", err);
+      kabarFoto(pesanGalatFoto(err), true);
+    } finally {
+      fotoSibuk = false;
+      aturTombolFoto();
+    }
+  });
+
+  fotoHapus.addEventListener("click", async () => {
+    const user = ctx.user();
+    if (!user || user.isAnonymous || fotoSibuk) return;
+    if (!confirm("Hapus foto profilmu?")) return;
+    fotoSibuk = true;
+    aturTombolFoto();
+    try {
+      await hapusFoto(user.uid);
+      kabarFoto("Foto profil dihapus.");
+    } catch (err) {
+      kabarFoto(pesanGalatFoto(err), true);
+    } finally {
+      fotoSibuk = false;
+      aturTombolFoto();
+    }
+  });
+
+  // Foto milik sendiri selesai dimuat / berubah: perbarui tombol Hapus
+  pantauFoto((uid) => {
+    if (uid === ctx.user()?.uid) render();
+  });
+
   // ===== Aksi kecil =====
   salinBtn.addEventListener("click", async () => {
     const uid = ctx.user()?.uid;
@@ -190,10 +261,15 @@ export function initProfil(ctx) {
     if (kunci !== avatarKunci) {
       avatarKunci = kunci;
       avatarBox.replaceChildren(
-        buatAvatar(nama, user.uid, { ukuran: "xl", foto }),
+        buatAvatar(nama, user.uid, { ukuran: "xl", foto, verified: google }),
       );
     }
     namaEl.textContent = nama || "Tanpa nama";
+
+    // Ganti / hapus foto: hanya akun Google (admin juga boleh untuk fotonya sendiri)
+    fotoAksi.hidden = !google;
+    fotoHapus.hidden = !google || !urlFoto(user.uid);
+    if (!google) kabarFoto("");
 
     const label = { admin: "Admin", user: "User", anon: "Tamu" }[status] || "";
     chip.hidden = !label;

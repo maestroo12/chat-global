@@ -13,6 +13,7 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 - **Tiga panel**: Beranda, Chat, dan Profil. Di laptop/PC menunya di samping dan area kerjanya lebar, di HP menunya di bawah. Alamat tiap panel: `#/beranda`, `#/chat`, `#/profil`.
 - **Beranda**: sapaan, obrolan terbaru, siapa yang online, pembaruan, dan jumlah pesan chat yang belum dibaca (angka di menu Chat).
 - **Profil**: avatar, info akun, ubah nama tampilan dan bio (akun Google, bio disimpan di `profiles/{uid}`), jatah tamu, saklar mode gelap, login/keluar.
+- **Foto profil**: akun Google (User dan Admin) bisa ganti/hapus foto lewat menu Profil; tamu tidak bisa. Foto dipotong persegi dan dikecilkan otomatis di browser (192 px, JPEG), lalu disimpan di `avatars/{uid}`. Foto tampil di samping pesan, Beranda, dan daftar online. Siapa pun (termasuk tamu) bisa mengetuk foto orang untuk membuka profilnya, **hanya lihat**. Admin mengganti/menghapus foto orang lain lewat Panel admin → "Cek & atur pengguna", bukan dari kartu profil.
 - **Chat realtime** untuk semua pengguna dalam satu ruang global.
 - **Masuk sebagai tamu** (Firebase Anonymous Auth), cukup isi nama. Batas ganti nama 5x per hari, baru dihitung saat pesan dengan nama baru benar-benar terkirim.
 - **Login Google**: nama otomatis, centang terverifikasi, kirim foto/file, tanpa batas pesan.
@@ -88,6 +89,8 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 │   └── js/
 │       ├── main.js          # Logika utama: auth, chat, reply, hapus, upload, presence
 │       ├── config.js        # Konfigurasi Firebase dan LIMITS
+│       ├── foto.js          # Foto profil: kecilkan gambar, simpan ke avatars/{uid}, cache
+│       ├── profil-lihat.js  # Kartu profil orang lain (hanya lihat), terbuka saat foto diketuk
 │       ├── news.js          # Daftar pembaruan untuk menu "Yang baru"
 │       ├── utils.js         # Fungsi bantu (format ukuran, wrapper localStorage)
 │       └── theme-init.js    # Menerapkan tema sebelum halaman tampil (anti-berkedip)

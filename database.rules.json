@@ -71,6 +71,26 @@
       }
     },
 
+    "avatars": {
+      ".read": false,
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && !root.child('banned').child(auth.uid).exists() && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['data', 'at'])",
+        "data": {
+          ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length <= 40000"
+        },
+        "at": {
+          ".validate": "newData.isNumber()"
+        },
+        "by": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "profiles": {
       ".read": "auth != null",
 

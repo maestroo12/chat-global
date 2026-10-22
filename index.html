@@ -223,6 +223,12 @@
             <div class="page profil-grid">
               <section class="card profil-kartu" aria-label="Identitas">
                 <div id="profil-avatar" class="profil-avatar"></div>
+                <div id="profil-foto-aksi" class="profil-foto-aksi" hidden>
+                  <button type="button" id="profil-foto-ganti" class="btn biasa kecil">Ganti foto</button>
+                  <button type="button" id="profil-foto-hapus" class="btn biasa kecil" hidden>Hapus foto</button>
+                  <input type="file" id="profil-foto-file" accept="image/jpeg,image/png,image/webp" hidden />
+                </div>
+                <p id="profil-foto-kabar" class="kabar" role="status"></p>
                 <h3 id="profil-nama" class="profil-nama"></h3>
                 <span id="profil-status" class="chip" hidden></span>
                 <p id="profil-email" class="profil-email"></p>
@@ -233,8 +239,8 @@
                 <section id="profil-tamu" class="card card-ajak" hidden>
                   <h4>Lengkapi profilmu</h4>
                   <p class="card-teks">
-                    Tamu belum punya bio dan nama tampilan sendiri. Login Google untuk
-                    mengubahnya. Nama tamu diubah lewat kolom nama di halaman Chat.
+                    Tamu belum punya foto profil, bio, dan nama tampilan sendiri. Login
+                    Google untuk mengubahnya. Nama tamu diubah lewat kolom nama di halaman Chat.
                   </p>
                   <button type="button" id="profil-login" class="btn utama">Login Google</button>
                 </section>
@@ -433,6 +439,20 @@
             <div id="admin-profil" class="admin-kartu" hidden></div>
           </section>
           <section class="admin-section">
+            <h3>
+              Sedang online
+              <span id="admin-online-count" class="admin-count">0</span>
+            </h3>
+            <ul id="admin-online" class="admin-list"></ul>
+          </section>
+          <section class="admin-section">
+            <h3>
+              Diblokir
+              <span id="admin-banned-count" class="admin-count">0</span>
+            </h3>
+            <ul id="admin-banned" class="admin-list"></ul>
+          </section>
+          <section class="admin-section">
             <h3>Nama tampilan</h3>
             <form id="admin-name-form">
               <input
@@ -449,21 +469,7 @@
               nama Google.
             </p>
           </section>
-          <section class="admin-section">
-            <h3>
-              Sedang online
-              <span id="admin-online-count" class="admin-count">0</span>
-            </h3>
-            <ul id="admin-online" class="admin-list"></ul>
-          </section>
-          <section class="admin-section">
-            <h3>
-              Diblokir
-              <span id="admin-banned-count" class="admin-count">0</span>
-            </h3>
-            <ul id="admin-banned" class="admin-list"></ul>
-          </section>
-          <section class="admin-section">
+          <section class="admin-section admin-section-bahaya">
             <h3>Hapus riwayat chat</h3>
             <form id="admin-purge-form">
               <input
@@ -484,6 +490,23 @@
             </p>
           </section>
         </div>
+      </div>
+    </div>
+
+    <!-- Profil orang lain (hanya lihat) -->
+    <div id="profil-lihat" hidden>
+      <div class="sheet-backdrop" data-tutup-lihat></div>
+      <div
+        class="news-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lihat-judul"
+      >
+        <div class="news-top">
+          <h2 id="lihat-judul">Profil</h2>
+          <button id="lihat-close" type="button" aria-label="Tutup">×</button>
+        </div>
+        <div id="lihat-body"></div>
       </div>
     </div>
 

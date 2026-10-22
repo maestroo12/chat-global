@@ -50,7 +50,7 @@ export function initBeranda(ctx) {
           el(
             "button",
             { type: "button", class: "feed-row", "data-nav": "chat" },
-            buatAvatar(p.nama, p.uid),
+            buatAvatar(p.nama, p.uid, { buka: true, verified: p.verified }),
             el(
               "span",
               { class: "feed-isi" },
@@ -81,7 +81,7 @@ export function initBeranda(ctx) {
       el(
         "li",
         { class: "online-row" },
-        buatAvatar(o.nama, o.uid, { ukuran: "sm" }),
+        buatAvatar(o.nama, o.uid, { ukuran: "sm", buka: true }),
         el("span", { class: "online-nama", text: o.nama }),
         o.saya && el("span", { class: "tag", text: "Kamu" }),
         !o.saya && !!o.admin && el("span", { class: "tag admin", text: "Admin" }),

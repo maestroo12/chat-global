@@ -1,3 +1,5 @@
+import { UID_RE, urlFoto, muatFoto, pantauFoto } from "./foto.js";
+
 // Pembantu kecil untuk membangun elemen di panel Beranda & Profil.
 // Semua teks lewat textContent (bukan innerHTML), dan tidak ada atribut style di
 // markup, supaya tetap aman dengan CSP.
@@ -37,19 +39,72 @@ function warna(kunci) {
   return h % 360;
 }
 
-// Avatar bulat: foto kalau ada, kalau gagal dimuat tetap tampil inisial.
+// Pasang / ganti / buang foto di dalam avatar. Kalau gagal dimuat tetap tampil inisial.
+export function setFoto(avatar, url) {
+  avatar.querySelector("img")?.remove();
+  avatar.classList.toggle("ada-foto", !!url);
+  if (!url) return;
+  const img = el("img", { alt: "", src: url, referrerpolicy: "no-referrer" });
+  img.addEventListener("error", () => img.remove());
+  avatar.append(img);
+}
+
+// Foto seseorang berubah (diganti / dihapus / baru dimuat): perbarui semua avatarnya
+// yang sedang tampil, di mana pun (chat, beranda, menu, profil).
+pantauFoto((uid, url) => {
+  document
+    .querySelectorAll(`.avatar[data-uid="${uid}"]`)
+    .forEach((a) => {
+      // Foto bawaan Google milik sendiri tetap jadi cadangan kalau foto khusus dihapus
+      if (!url && a.dataset.cadangan) setFoto(a, a.dataset.cadangan);
+      else setFoto(a, url);
+    });
+});
+
+// Avatar bulat. Foto profil (avatars/{uid}) dimuat otomatis kalau `kunci` berupa uid.
 // ukuran: "" (40px) | "sm" | "xl"
-export function buatAvatar(nama, kunci, { ukuran = "", foto = "" } = {}) {
+// foto: foto cadangan (mis. foto Google milik sendiri), dipakai kalau belum ada foto khusus
+// buka: avatar bisa diketuk untuk melihat profil orangnya (hanya lihat)
+// verified: false = akun tamu (tamu tidak punya foto, jadi tidak perlu dimuat)
+export function buatAvatar(
+  nama,
+  kunci,
+  { ukuran = "", foto = "", buka = false, verified } = {},
+) {
   const a = el("span", {
     class: ("avatar " + ukuran).trim(),
     "aria-hidden": "true",
     text: inisial(nama),
   });
   a.style.backgroundColor = `hsl(${warna(kunci || nama)} 42% 36%)`;
+
+  const uid = UID_RE.test(kunci || "") ? kunci : "";
+  if (uid) a.dataset.uid = uid;
   if (foto) {
-    const img = el("img", { alt: "", src: foto, referrerpolicy: "no-referrer" });
-    img.addEventListener("error", () => img.remove());
-    a.append(img);
+    a.dataset.cadangan = foto;
+    setFoto(a, foto);
+  }
+  if (buka && uid) {
+    a.classList.add("bisa-buka");
+    a.dataset.buka = "1";
+    a.dataset.nama = nama || "";
+    if (verified != null) a.dataset.verified = verified ? "1" : "0";
+    a.removeAttribute("aria-hidden");
+    a.setAttribute("role", "button");
+    a.setAttribute("aria-label", `Lihat profil ${nama || "pengguna"}`);
+    a.title = "Lihat profil";
+    a.tabIndex = 0;
+  }
+
+  if (uid && verified !== false) {
+    const dalamCache = urlFoto(uid);
+    if (dalamCache !== undefined) {
+      if (dalamCache) setFoto(a, dalamCache);
+    } else {
+      muatFoto(uid).then((url) => {
+        if (url) setFoto(a, url);
+      });
+    }
   }
   return a;
 }

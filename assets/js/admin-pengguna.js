@@ -10,7 +10,15 @@ import {
   limitToLast,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
-import { el } from "./ui.js";
+import { el, buatAvatar, waktuRingkas } from "./ui.js";
+import {
+  kecilkanFoto,
+  simpanFoto,
+  hapusFoto,
+  urlFoto,
+  muatFoto,
+  pantauFoto,
+} from "./foto.js";
 
 // Cek profil + atur pengguna lewat ID (bagian dari Panel admin).
 // Pengaturan disimpan di userSettings/{uid}; kosong = pakai bawaan aplikasi.
@@ -158,6 +166,7 @@ export function initPengguna(ctx) {
     }
 
     bangunKartu();
+    muatFoto(uid, { segar: true }); // foto terbaru; avatar & tombol ikut diperbarui otomatis
     stopSet = onValue(
       ref(ctx.db, `userSettings/${uid}`),
       (snap) => {
@@ -176,23 +185,20 @@ export function initPengguna(ctx) {
   }
 
   function chip(teks, kelas) {
-    return el("span", { class: "admin-chip" + (kelas ? " " + kelas : ""), text: teks });
+    return el("span", { class: "chip" + (kelas ? " " + kelas : ""), text: teks });
+  }
+
+  // Satu baris "label ... nilai", sama seperti Info akun di halaman Profil
+  function barisInfo(label, ...isi) {
+    const dd = el("dd");
+    for (const x of isi) if (x != null) dd.append(x);
+    return { baris: el("div", { class: "info-row" }, el("dt", { text: label }), dd), dd };
   }
 
   function bangunKartu() {
-    ui = {
-      nama: el("div", { class: "admin-kartu-nama" }),
-      chips: el("div", { class: "admin-chips" }),
-      id: el("code", { class: "admin-id", text: S.uid }),
-      bio: el("p", { class: "admin-bio" }),
-      aksi: el("div", { class: "admin-acts" }),
-      pesan: el("ul", { class: "admin-pesan" }),
-      status: el("p", { class: "admin-hint" }),
-      kabar: el("p", { class: "admin-hint", role: "status" }),
-    };
     const salin = el("button", {
       type: "button",
-      class: "admin-act",
+      class: "link-btn",
       text: "Salin ID",
       onclick: async () => {
         try {
@@ -204,24 +210,64 @@ export function initPengguna(ctx) {
         setTimeout(() => (salin.textContent = "Salin ID"), 1800);
       },
     });
-    const tutupBtn = el("button", {
-      type: "button",
-      class: "admin-act",
-      text: "Tutup",
-      onclick: tutup,
-    });
 
-    ui.f = {};
+    const iJenis = barisInfo("Jenis akun");
+    const iOnline = barisInfo("Status");
+    const iId = barisInfo(
+      "ID pengguna",
+      el("span", { text: S.uid.slice(0, 6), title: S.uid }),
+      salin,
+    );
+    const iPesan = barisInfo("Pesan terakhir");
+    const iSet = barisInfo("Pengaturan");
+
+    const fotoFile = el("input", {
+      type: "file",
+      accept: "image/jpeg,image/png,image/webp",
+      hidden: true,
+    });
+    fotoFile.addEventListener("change", gantiFoto);
+
+    ui = {
+      avatar: el("div", { class: "admin-avatar" }),
+      fotoFile,
+      fotoGanti: el("button", {
+        type: "button",
+        class: "btn biasa kecil",
+        text: "Ganti foto",
+        onclick: () => fotoFile.click(),
+      }),
+      fotoHapus: el("button", {
+        type: "button",
+        class: "btn biasa kecil danger",
+        text: "Hapus foto",
+        onclick: hapusFotoPengguna,
+      }),
+      fotoKabar: el("p", { class: "kabar", role: "status" }),
+      jenisTamu: false,
+      avatarKunci: "",
+      nama: el("h4", { class: "admin-kartu-nama" }),
+      chips: el("div", { class: "admin-chips" }),
+      bio: el("p", { class: "admin-bio" }),
+      infoJenis: iJenis.dd,
+      infoOnline: iOnline.dd,
+      infoPesan: iPesan.dd,
+      infoSet: iSet.dd,
+      aksi: el("span", { class: "admin-slot" }),
+      pesan: el("ul", { class: "admin-pesan" }),
+      status: el("p", { class: "hint" }),
+      kabar: el("span", { class: "kabar", role: "status" }),
+      f: {},
+    };
+
     const angka = (kunci, placeholder) => {
       const input = el("input", {
         type: "number",
-        class: "admin-num",
         min: BATAS[kunci].min,
         max: BATAS[kunci].max,
         step: 1,
         inputmode: "numeric",
         placeholder,
-        "aria-label": BATAS[kunci].label,
       });
       input.addEventListener("input", () => (S.formKotor = true));
       ui.f[kunci] = input;
@@ -230,10 +276,10 @@ export function initPengguna(ctx) {
     const baris = (label, input, bantuan) =>
       el(
         "label",
-        { class: "admin-field" },
-        el("span", { class: "admin-field-label", text: label }),
+        { class: "field" },
+        el("span", { text: label }),
         input,
-        el("span", { class: "admin-hint", text: bantuan }),
+        el("small", { text: bantuan }),
       );
 
     ui.f.noFile = el("input", { type: "checkbox" });
@@ -241,7 +287,7 @@ export function initPengguna(ctx) {
 
     const pengaturan = el(
       "form",
-      { class: "admin-pengaturan", novalidate: true, onsubmit: simpan },
+      { novalidate: true, onsubmit: simpan },
       el("h4", { text: "Pengaturan pengguna" }),
       baris(
         "Batas pesan per 24 jam",
@@ -261,37 +307,67 @@ export function initPengguna(ctx) {
       el(
         "label",
         { class: "admin-cek" },
-        ui.f.noFile,
         el("span", { text: "Larang kirim foto/file" }),
+        ui.f.noFile,
       ),
       el(
         "div",
-        { class: "admin-acts admin-acts-kiri" },
-        el("button", { type: "submit", class: "admin-act", text: "Simpan" }),
+        { class: "form-aksi" },
+        el("button", { type: "submit", class: "btn utama", text: "Simpan" }),
         el("button", {
           type: "button",
-          class: "admin-act",
+          class: "btn biasa",
           text: "Kembalikan ke bawaan",
           onclick: resetPengaturan,
         }),
+        ui.kabar,
       ),
       ui.status,
-      ui.kabar,
       el("p", {
-        class: "admin-hint",
+        class: "hint",
         text: "Pengaturan melekat pada ID akun. Tamu yang menghapus data browser mendapat ID baru, jadi bawaan berlaku lagi.",
       }),
     );
 
     kartu.replaceChildren(
-      el("div", { class: "admin-kartu-atas" }, ui.nama, ui.chips),
-      el("div", { class: "admin-idbaris" }, ui.id, salin),
-      ui.bio,
-      el("h4", { text: "Pesan terakhir" }),
-      ui.pesan,
-      ui.aksi,
-      pengaturan,
-      el("div", { class: "admin-acts admin-acts-kiri" }, tutupBtn),
+      el(
+        "section",
+        { class: "admin-blok admin-identitas" },
+        ui.avatar,
+        (ui.fotoAksi = el(
+          "div",
+          { class: "profil-foto-aksi" },
+          ui.fotoGanti,
+          ui.fotoHapus,
+          fotoFile,
+        )),
+        ui.fotoKabar,
+        ui.nama,
+        ui.chips,
+        ui.bio,
+      ),
+      el(
+        "section",
+        { class: "admin-blok" },
+        el("h4", { text: "Info akun" }),
+        el(
+          "dl",
+          { class: "info" },
+          iJenis.baris,
+          iOnline.baris,
+          iId.baris,
+          iPesan.baris,
+          iSet.baris,
+        ),
+      ),
+      el("section", { class: "admin-blok" }, el("h4", { text: "Pesan terakhir" }), ui.pesan),
+      el("section", { class: "admin-blok" }, pengaturan),
+      el(
+        "div",
+        { class: "admin-aksi" },
+        ui.aksi,
+        el("button", { type: "button", class: "btn biasa", text: "Tutup", onclick: tutup }),
+      ),
     );
     isiInfo();
     isiForm(true);
@@ -312,6 +388,12 @@ export function initPengguna(ctx) {
       "Tanpa nama";
     ui.nama.textContent = nama + (saya ? " (kamu)" : "");
 
+    const kunciAvatar = nama + "|" + uid;
+    if (kunciAvatar !== ui.avatarKunci) {
+      ui.avatarKunci = kunciAvatar;
+      ui.avatar.replaceChildren(buatAvatar(nama, uid, { ukuran: "xl" }));
+    }
+
     const jenis = admin
       ? "Admin"
       : terakhir?.verified
@@ -319,15 +401,30 @@ export function initPengguna(ctx) {
         : terakhir
           ? "Tamu"
           : "Jenis tidak diketahui";
-    const online = u?.lastSeen && Date.now() - u.lastSeen < ONLINE_MS;
+    ui.jenisTamu = jenis === "Tamu";
+    isiFotoAksi();
     const chips = [chip(jenis, admin ? "admin" : "")];
-    chips.push(chip(online ? "Online" : "Offline", online ? "hijau" : ""));
     if (ban) chips.push(chip("Diblokir", "merah"));
-    if (S.set) chips.push(chip("Ada pengaturan khusus", "biru"));
     ui.chips.replaceChildren(...chips);
 
     ui.bio.textContent = S.bio || "Belum ada bio.";
     ui.bio.classList.toggle("kosong", !S.bio);
+
+    // Info akun
+    const online = !!(u?.lastSeen && Date.now() - u.lastSeen < ONLINE_MS);
+    ui.infoJenis.textContent = jenis;
+    ui.infoOnline.replaceChildren(
+      el("span", { class: "admin-dot" + (online ? " aktif" : "") }),
+      el("span", {
+        text: online
+          ? "Online"
+          : u?.lastSeen
+            ? "Offline · " + waktuRingkas(u.lastSeen)
+            : "Offline",
+      }),
+    );
+    ui.infoPesan.textContent = terakhir?.timestamp ? waktu(terakhir.timestamp) : "-";
+    ui.infoSet.textContent = S.set ? "Khusus" : "Bawaan";
 
     if (!S.pesan.length) {
       ui.pesan.replaceChildren(
@@ -362,13 +459,13 @@ export function initPengguna(ctx) {
         ban
           ? el("button", {
               type: "button",
-              class: "admin-act",
+              class: "btn biasa",
               text: "Buka blokir",
               onclick: () => ctx.bukaBlokir(uid),
             })
           : el("button", {
               type: "button",
-              class: "admin-act danger",
+              class: "btn biasa danger",
               text: "Blokir pengguna",
               onclick: () => ctx.blokir(uid, nama),
             }),
@@ -387,6 +484,68 @@ export function initPengguna(ctx) {
           .filter(Boolean)
           .join(", ")
       : "Memakai pengaturan bawaan.";
+  }
+
+  // ===== Foto profil pengguna (hanya admin, lewat panel ini) =====
+  function isiFotoAksi() {
+    if (!S || !ui) return;
+    ui.fotoAksi.hidden = ui.jenisTamu;
+    ui.fotoHapus.hidden = !urlFoto(S.uid);
+    if (ui.jenisTamu) {
+      ui.fotoKabar.textContent = "Tamu tidak bisa punya foto profil.";
+      ui.fotoKabar.classList.remove("galat");
+    }
+  }
+
+  pantauFoto((uid) => {
+    if (S && ui && S.uid === uid) isiFotoAksi();
+  });
+
+  async function ubahFoto(kerja, pesanSukses) {
+    if (!ctx.aktif() || !S || !ui || ui.sibukFoto) return;
+    const u = ui;
+    const uid = S.uid;
+    const kabar = (teks, galat = false) => {
+      if (ui !== u) return; // kartu sudah berganti ke pengguna lain
+      u.fotoKabar.textContent = teks;
+      u.fotoKabar.classList.toggle("galat", galat);
+    };
+    u.sibukFoto = true;
+    u.fotoGanti.disabled = true;
+    u.fotoHapus.disabled = true;
+    kabar("Memproses foto...");
+    try {
+      await kerja(uid);
+      kabar(pesanSukses);
+    } catch (err) {
+      console.error("Gagal mengubah foto:", err);
+      kabar(
+        err.code === "PERMISSION_DENIED"
+          ? "Ditolak. Pastikan database.rules.json terbaru sudah di-deploy."
+          : err.message || "Gagal mengubah foto.",
+        true,
+      );
+    } finally {
+      u.sibukFoto = false;
+      u.fotoGanti.disabled = false;
+      u.fotoHapus.disabled = false;
+    }
+  }
+
+  async function gantiFoto() {
+    const file = ui?.fotoFile.files[0];
+    if (ui) ui.fotoFile.value = "";
+    if (!file) return;
+    await ubahFoto(async (uid) => {
+      const data = await kecilkanFoto(file);
+      await simpanFoto(uid, data, ctx.user().uid);
+    }, "Foto diperbarui.");
+  }
+
+  async function hapusFotoPengguna() {
+    if (!ui || !S) return;
+    if (!confirm("Hapus foto profil pengguna ini?")) return;
+    await ubahFoto((uid) => hapusFoto(uid), "Foto dihapus.");
   }
 
   function isiForm(paksa) {
