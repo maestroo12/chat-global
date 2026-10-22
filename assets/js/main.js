@@ -18,6 +18,7 @@ import {
   endBefore,
   remove,
   update,
+  onDisconnect,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 import {
   getAuth,
@@ -208,6 +209,8 @@ const {
 let currentUser = null;
 let listenerAktif = false;
 let heartbeat = null;
+let stopKoneksi = null; // berhenti memantau status koneksi Firebase (.info/connected)
+let presenceRef = null; // users/{uid} milik akun yang sedang tercatat online
 let stopPantauSisa = null;
 let diblokir = false; // akun ini diblokir admin
 let stopHidden = null;
@@ -2163,7 +2166,9 @@ let catatPresence = () => {};
 
 function mulaiPresence(user) {
   clearInterval(heartbeat);
+  if (stopKoneksi) stopKoneksi();
   const userRef = ref(db, `users/${user.uid}`);
+  presenceRef = userRef;
 
   catatPresence = () => {
     const nama = (
@@ -2176,8 +2181,41 @@ function mulaiPresence(user) {
     );
   };
 
-  catatPresence();
-  heartbeat = setInterval(catatPresence, 20000);
+  // Setiap kali tersambung (termasuk sambung ulang setelah putus), minta SERVER
+  // menghapus catatan online ini begitu koneksi kita terputus (tab ditutup, keluar
+  // dari web, internet mati). Server yang mendeteksi, jadi langsung terdeteksi dan
+  // tidak bergantung pada kode di tab yang sudah tertutup. Baru setelah itu kita
+  // tandai online.
+  stopKoneksi = onValue(ref(db, ".info/connected"), (snap) => {
+    if (snap.val() !== true) return;
+    onDisconnect(userRef)
+      .remove()
+      .catch(() => {})
+      .then(() => catatPresence());
+  });
+
+  // Cadangan: detak berkala (dipakai juga sebagai penanda kalau server telat mendeteksi)
+  heartbeat = setInterval(() => catatPresence(), 20000);
+}
+
+// Matikan presence akun saat ini dan hapus catatannya SEKARANG. Harus dipanggil selagi
+// akun itu masih login (sebelum keluar/ganti akun), karena setelah akun berganti
+// izin tulis ke catatan lama sudah hilang dan nama lamanya baru hilang setelah menunggu.
+// Mengembalikan fungsi untuk memulihkan presence kalau ganti akunnya batal/gagal.
+async function akhiriPresence() {
+  const user = currentUser;
+  const lama = presenceRef;
+  clearInterval(heartbeat);
+  if (stopKoneksi) stopKoneksi();
+  stopKoneksi = null;
+  presenceRef = null;
+  catatPresence = () => {};
+  if (lama) {
+    await Promise.allSettled([onDisconnect(lama).cancel(), remove(lama)]);
+  }
+  return () => {
+    if (user && currentUser === user) mulaiPresence(user);
+  };
 }
 
 // Tab kembali terlihat / jendela kembali aktif: langsung tandai online lagi
@@ -2187,13 +2225,20 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("focus", () => catatPresence());
 
-window.addEventListener("beforeunload", () => {
+// Tab ditutup / halaman ditinggalkan: hapus catatan online secepat mungkin. Ini hanya
+// percepatan; yang menjamin tetap onDisconnect di server (lihat mulaiPresence).
+function tinggalkanHalaman() {
   clearInterval(heartbeat);
-  if (currentUser) remove(ref(db, `users/${currentUser.uid}`));
-});
+  if (currentUser) remove(ref(db, `users/${currentUser.uid}`)).catch(() => {});
+}
+window.addEventListener("beforeunload", tinggalkanHalaman);
+window.addEventListener("pagehide", tinggalkanHalaman);
 
 // ===== LOGIN / LOGOUT GOOGLE =====
 async function masukKeluar() {
+  // Hapus catatan online akun lama dulu (masih login), supaya tidak tertinggal
+  // sebagai "online" selama beberapa menit setelah ganti akun.
+  const pulihkanPresence = await akhiriPresence();
   try {
     if (isGoogle(currentUser)) {
       await signOut(auth); // otomatis kembali jadi tamu
@@ -2220,6 +2265,7 @@ async function masukKeluar() {
     }
   } catch (err) {
     console.error("Login gagal:", err);
+    pulihkanPresence(); // login batal/gagal: akun lama masih dipakai, tandai online lagi
     if (err.code !== "auth/popup-closed-by-user") {
       alert("Login gagal: " + err.code);
     }

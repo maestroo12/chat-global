@@ -17,6 +17,7 @@ export const MAKS_DATA_CHAR = 40000; // panjang data URL maksimal (Rules)
 
 let db = null;
 const cache = new Map(); // uid -> url ("" = tidak punya foto)
+const sumberGoogle = new Map(); // uid -> true kalau fotonya salinan otomatis dari foto Google
 const cacheWaktu = new Map(); // uid -> kapan terakhir dibaca dari server
 const UMUR_CACHE_MS = 2 * 60 * 1000; // lewat ini, dibaca ulang supaya foto baru orang lain ikut terlihat
 const menunggu = new Map(); // uid -> Promise yang sedang berjalan
@@ -46,6 +47,12 @@ export function urlFoto(uid) {
   return cache.get(uid);
 }
 
+// true = pemilik sendiri yang mengunggah foto (bisa dihapus lewat tombol "Hapus foto").
+// Salinan otomatis dari foto Google tidak dihitung, jadi tombol Hapus tidak muncul untuknya.
+export function fotoKhusus(uid) {
+  return !!cache.get(uid) && !sumberGoogle.get(uid);
+}
+
 export function muatFoto(uid, { segar = false } = {}) {
   if (!db || !UID_RE.test(uid || "")) return Promise.resolve("");
   if (!segar && cache.has(uid) && Date.now() - (cacheWaktu.get(uid) || 0) < UMUR_CACHE_MS) {
@@ -54,10 +61,12 @@ export function muatFoto(uid, { segar = false } = {}) {
   if (menunggu.has(uid)) return menunggu.get(uid);
   const p = get(ref(db, `avatars/${uid}`))
     .then((snap) => {
-      const data = snap.val()?.data;
+      const isi = snap.val();
+      const data = isi?.data;
       const url = typeof data === "string" ? data : "";
-      const beda = cache.get(uid) !== url;
+      const beda = cache.get(uid) !== url || sumberGoogle.get(uid) !== (isi?.src === "google");
       cache.set(uid, url);
+      sumberGoogle.set(uid, isi?.src === "google");
       cacheWaktu.set(uid, Date.now());
       if (beda) kabari(uid, url);
       return url;
@@ -71,20 +80,22 @@ export function muatFoto(uid, { segar = false } = {}) {
 // Ganti akun / keluar: buang cache supaya tidak ada sisa dari sesi sebelumnya
 export function kosongkanFoto() {
   cache.clear();
+  sumberGoogle.clear();
   cacheWaktu.clear();
   menunggu.clear();
 }
 
-export async function simpanFoto(uid, dataUrl, olehUid) {
+export async function simpanFoto(uid, dataUrl, olehUid, { google = false } = {}) {
   if (!db || !UID_RE.test(uid || "")) throw new Error("ID tidak valid.");
   await set(ref(db, `avatars/${uid}`), {
     data: dataUrl,
     at: serverTimestamp(),
     by: olehUid,
+    ...(google ? { src: "google" } : {}),
   });
   cache.set(uid, dataUrl);
+  sumberGoogle.set(uid, google);
   cacheWaktu.set(uid, Date.now());
-  tandaiFotoDihapus(uid, false);
   kabari(uid, dataUrl);
 }
 
@@ -92,27 +103,9 @@ export async function hapusFoto(uid) {
   if (!db || !UID_RE.test(uid || "")) throw new Error("ID tidak valid.");
   await remove(ref(db, `avatars/${uid}`));
   cache.set(uid, "");
+  sumberGoogle.set(uid, false);
   cacheWaktu.set(uid, Date.now());
-  tandaiFotoDihapus(uid, true); // jangan diterbitkan ulang otomatis dari foto Google
   kabari(uid, "");
-}
-
-// Kalau pemilik sengaja menghapus fotonya, foto Google tidak diterbitkan lagi otomatis (di perangkat ini)
-const KUNCI_DIHAPUS = "fotoDihapus:";
-function tandaiFotoDihapus(uid, ya) {
-  try {
-    if (ya) localStorage.setItem(KUNCI_DIHAPUS + uid, "1");
-    else localStorage.removeItem(KUNCI_DIHAPUS + uid);
-  } catch {
-    /* localStorage tidak tersedia: abaikan */
-  }
-}
-function fotoSengajaDihapus(uid) {
-  try {
-    return localStorage.getItem(KUNCI_DIHAPUS + uid) === "1";
-  } catch {
-    return false;
-  }
 }
 
 // Muat gambar lintas-origin (CORS) supaya bisa digambar ke canvas tanpa "tainted"
@@ -136,7 +129,7 @@ export async function terbitkanFotoGoogle(user) {
     if (!db || !user || user.isAnonymous || !UID_RE.test(user.uid || "")) return;
     const sumber =
       user.photoURL || user.providerData?.find((p) => p.photoURL)?.photoURL || "";
-    if (!sumber || fotoSengajaDihapus(user.uid)) return;
+    if (!sumber) return;
 
     // Baca langsung (bukan lewat muatFoto) supaya gagal baca tidak dikira "belum punya foto"
     const snap = await get(ref(db, `avatars/${user.uid}`));
@@ -167,8 +160,7 @@ export async function terbitkanFotoGoogle(user) {
     for (let q = 0.86; q >= 0.4; q -= 0.12) {
       const data = canvas.toDataURL("image/jpeg", q); // error kalau canvas tainted -> ditangkap di bawah
       if (data.length <= MAKS_DATA_CHAR) {
-        await simpanFoto(user.uid, data, user.uid);
-        tandaiFotoDihapus(user.uid, false);
+        await simpanFoto(user.uid, data, user.uid, { google: true });
         return;
       }
     }

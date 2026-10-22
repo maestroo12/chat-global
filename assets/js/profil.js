@@ -11,6 +11,7 @@ import {
   simpanFoto,
   hapusFoto,
   urlFoto,
+  fotoKhusus,
   pantauFoto,
   terbitkanFotoGoogle,
 } from "./foto.js";
@@ -203,7 +204,11 @@ export function initProfil(ctx) {
     aturTombolFoto();
     try {
       await hapusFoto(user.uid);
-      kabarFoto("Foto profil dihapus.");
+      // Kembali ke foto Google supaya orang lain tetap melihat fotomu
+      await terbitkanFotoGoogle(user);
+      kabarFoto(
+        urlFoto(user.uid) ? "Kembali memakai foto Google." : "Foto profil dihapus.",
+      );
     } catch (err) {
       kabarFoto(pesanGalatFoto(err), true);
     } finally {
@@ -278,7 +283,7 @@ export function initProfil(ctx) {
 
     // Ganti / hapus foto: hanya akun Google (admin juga boleh untuk fotonya sendiri)
     fotoAksi.hidden = !google;
-    fotoHapus.hidden = !google || !urlFoto(user.uid);
+    fotoHapus.hidden = !google || !fotoKhusus(user.uid);
     if (!google) kabarFoto("");
 
     const label = { admin: "Admin", user: "User", anon: "Tamu" }[status] || "";

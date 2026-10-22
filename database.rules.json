@@ -86,6 +86,9 @@
         "by": {
           ".validate": "newData.isString() && newData.val() === auth.uid"
         },
+        "src": {
+          ".validate": "newData.val() === 'google'"
+        },
         "$other": {
           ".validate": false
         }
@@ -303,4 +306,4 @@
       }
     }
   }
-}
+}
