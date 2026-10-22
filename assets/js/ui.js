@@ -97,14 +97,13 @@ export function buatAvatar(
   }
 
   if (uid && verified !== false) {
+    // Tampilkan dulu yang ada di cache, lalu muat/segarkan (cache punya masa berlaku
+    // singkat, jadi foto baru orang lain ikut terlihat tanpa perlu reload).
     const dalamCache = urlFoto(uid);
-    if (dalamCache !== undefined) {
-      if (dalamCache) setFoto(a, dalamCache);
-    } else {
-      muatFoto(uid).then((url) => {
-        if (url) setFoto(a, url);
-      });
-    }
+    if (dalamCache) setFoto(a, dalamCache);
+    muatFoto(uid).then((url) => {
+      if (url && a.querySelector("img")?.getAttribute("src") !== url) setFoto(a, url);
+    });
   }
   return a;
 }

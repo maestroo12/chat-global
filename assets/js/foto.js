@@ -17,6 +17,8 @@ export const MAKS_DATA_CHAR = 40000; // panjang data URL maksimal (Rules)
 
 let db = null;
 const cache = new Map(); // uid -> url ("" = tidak punya foto)
+const cacheWaktu = new Map(); // uid -> kapan terakhir dibaca dari server
+const UMUR_CACHE_MS = 2 * 60 * 1000; // lewat ini, dibaca ulang supaya foto baru orang lain ikut terlihat
 const menunggu = new Map(); // uid -> Promise yang sedang berjalan
 const pendengar = new Set();
 
@@ -46,7 +48,9 @@ export function urlFoto(uid) {
 
 export function muatFoto(uid, { segar = false } = {}) {
   if (!db || !UID_RE.test(uid || "")) return Promise.resolve("");
-  if (!segar && cache.has(uid)) return Promise.resolve(cache.get(uid));
+  if (!segar && cache.has(uid) && Date.now() - (cacheWaktu.get(uid) || 0) < UMUR_CACHE_MS) {
+    return Promise.resolve(cache.get(uid));
+  }
   if (menunggu.has(uid)) return menunggu.get(uid);
   const p = get(ref(db, `avatars/${uid}`))
     .then((snap) => {
@@ -54,6 +58,7 @@ export function muatFoto(uid, { segar = false } = {}) {
       const url = typeof data === "string" ? data : "";
       const beda = cache.get(uid) !== url;
       cache.set(uid, url);
+      cacheWaktu.set(uid, Date.now());
       if (beda) kabari(uid, url);
       return url;
     })
@@ -66,6 +71,7 @@ export function muatFoto(uid, { segar = false } = {}) {
 // Ganti akun / keluar: buang cache supaya tidak ada sisa dari sesi sebelumnya
 export function kosongkanFoto() {
   cache.clear();
+  cacheWaktu.clear();
   menunggu.clear();
 }
 
@@ -77,6 +83,8 @@ export async function simpanFoto(uid, dataUrl, olehUid) {
     by: olehUid,
   });
   cache.set(uid, dataUrl);
+  cacheWaktu.set(uid, Date.now());
+  tandaiFotoDihapus(uid, false);
   kabari(uid, dataUrl);
 }
 
@@ -84,7 +92,89 @@ export async function hapusFoto(uid) {
   if (!db || !UID_RE.test(uid || "")) throw new Error("ID tidak valid.");
   await remove(ref(db, `avatars/${uid}`));
   cache.set(uid, "");
+  cacheWaktu.set(uid, Date.now());
+  tandaiFotoDihapus(uid, true); // jangan diterbitkan ulang otomatis dari foto Google
   kabari(uid, "");
+}
+
+// Kalau pemilik sengaja menghapus fotonya, foto Google tidak diterbitkan lagi otomatis (di perangkat ini)
+const KUNCI_DIHAPUS = "fotoDihapus:";
+function tandaiFotoDihapus(uid, ya) {
+  try {
+    if (ya) localStorage.setItem(KUNCI_DIHAPUS + uid, "1");
+    else localStorage.removeItem(KUNCI_DIHAPUS + uid);
+  } catch {
+    /* localStorage tidak tersedia: abaikan */
+  }
+}
+function fotoSengajaDihapus(uid) {
+  try {
+    return localStorage.getItem(KUNCI_DIHAPUS + uid) === "1";
+  } catch {
+    return false;
+  }
+}
+
+// Muat gambar lintas-origin (CORS) supaya bisa digambar ke canvas tanpa "tainted"
+function muatGambarCors(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Foto Google tidak bisa dimuat."));
+    img.src = url;
+  });
+}
+
+// Foto bawaan Google hanya tampil di perangkat pemiliknya (dari user.photoURL), sedangkan
+// orang lain hanya membaca avatars/{uid}. Jadi saat akun Google masuk dan belum punya
+// foto di avatars/{uid}, foto Google-nya disalin ke sana (dikecilkan jadi JPEG) agar
+// bisa dilihat semua orang. Tidak pernah menimpa foto yang sudah ada.
+export async function terbitkanFotoGoogle(user) {
+  try {
+    if (!db || !user || user.isAnonymous || !UID_RE.test(user.uid || "")) return;
+    const sumber =
+      user.photoURL || user.providerData?.find((p) => p.photoURL)?.photoURL || "";
+    if (!sumber || fotoSengajaDihapus(user.uid)) return;
+
+    // Baca langsung (bukan lewat muatFoto) supaya gagal baca tidak dikira "belum punya foto"
+    const snap = await get(ref(db, `avatars/${user.uid}`));
+    if (snap.exists()) return;
+
+    // Minta ukuran lebih besar dari bawaan (=s96-c) supaya tajam saat dikecilkan
+    const url = sumber.replace(/=s\d+(-c)?$/, "=s256-c");
+    const gambar = await muatGambarCors(url);
+    const canvas = document.createElement("canvas");
+    canvas.width = SISI;
+    canvas.height = SISI;
+    const g = canvas.getContext("2d");
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, SISI, SISI);
+    g.imageSmoothingQuality = "high";
+    const sisi = Math.min(gambar.naturalWidth, gambar.naturalHeight);
+    g.drawImage(
+      gambar,
+      (gambar.naturalWidth - sisi) / 2,
+      (gambar.naturalHeight - sisi) / 2,
+      sisi,
+      sisi,
+      0,
+      0,
+      SISI,
+      SISI,
+    );
+    for (let q = 0.86; q >= 0.4; q -= 0.12) {
+      const data = canvas.toDataURL("image/jpeg", q); // error kalau canvas tainted -> ditangkap di bawah
+      if (data.length <= MAKS_DATA_CHAR) {
+        await simpanFoto(user.uid, data, user.uid);
+        tandaiFotoDihapus(user.uid, false);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Foto Google belum bisa diterbitkan:", err);
+  }
 }
 
 async function bacaGambar(file) {

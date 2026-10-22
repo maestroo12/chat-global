@@ -6,7 +6,14 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 import { el, buatAvatar, fotoAkun, tanggalPanjang } from "./ui.js";
-import { kecilkanFoto, simpanFoto, hapusFoto, urlFoto, pantauFoto } from "./foto.js";
+import {
+  kecilkanFoto,
+  simpanFoto,
+  hapusFoto,
+  urlFoto,
+  pantauFoto,
+  terbitkanFotoGoogle,
+} from "./foto.js";
 
 const MAKS_BIO = 140;
 const MAKS_NAMA = 24;
@@ -73,6 +80,9 @@ export function initProfil(ctx) {
     bioInput.value = "";
     namaInput.value = "";
     kabar("");
+
+    // Terbitkan foto Google ke avatars/{uid} supaya orang lain bisa melihatnya
+    if (user && !user.isAnonymous) terbitkanFotoGoogle(user);
 
     if (user && !user.isAnonymous) {
       stopBio = onValue(
