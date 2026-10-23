@@ -32,11 +32,23 @@ export function inisial(nama) {
   return (depan + belakang).toUpperCase();
 }
 
-// Warna avatar stabil per pengguna (diturunkan dari uid/nama)
+// Warna avatar stabil per pengguna (diturunkan dari uid/nama). Palet redup terpilih
+// supaya cocok dengan tema dan tidak ramai.
+const WARNA_AVATAR = [
+  "hsl(212 38% 34%)",
+  "hsl(200 22% 36%)",
+  "hsl(150 24% 30%)",
+  "hsl(28 42% 38%)",
+  "hsl(8 40% 40%)",
+  "hsl(42 40% 34%)",
+  "hsl(174 28% 30%)",
+  "hsl(340 26% 38%)",
+];
+
 function warna(kunci) {
   let h = 0;
   for (const c of String(kunci || "")) h = (h * 31 + c.codePointAt(0)) >>> 0;
-  return h % 360;
+  return WARNA_AVATAR[h % WARNA_AVATAR.length];
 }
 
 // Pasang / ganti / buang foto di dalam avatar. Kalau gagal dimuat tetap tampil inisial.
@@ -76,7 +88,7 @@ export function buatAvatar(
     "aria-hidden": "true",
     text: inisial(nama),
   });
-  a.style.backgroundColor = `hsl(${warna(kunci || nama)} 42% 36%)`;
+  a.style.backgroundColor = warna(kunci || nama);
 
   const uid = UID_RE.test(kunci || "") ? kunci : "";
   if (uid) a.dataset.uid = uid;

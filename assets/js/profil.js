@@ -31,7 +31,6 @@ export function initProfil(ctx) {
   const emailEl = $("profil-email");
   const bioEl = $("profil-bio");
 
-  const tamuKartu = $("profil-tamu");
   const editKartu = $("profil-edit-kartu");
   const form = $("profil-form");
   const namaWrap = $("profil-nama-wrap");
@@ -42,13 +41,9 @@ export function initProfil(ctx) {
   const simpanBtn = $("profil-simpan");
   const kabarEl = $("profil-kabar");
 
-  const infoJenis = $("info-jenis");
-  const infoEmailBaris = $("info-email-baris");
-  const infoEmail = $("info-email");
   const infoId = $("info-id");
   const salinBtn = $("info-salin");
   const infoGabung = $("info-gabung");
-  const infoMasuk = $("info-masuk");
 
   const limitKartu = $("profil-limit");
   const limitPesan = $("limit-pesan");
@@ -235,9 +230,7 @@ export function initProfil(ctx) {
     setTimeout(() => (salinBtn.textContent = "Salin ID"), 1800);
   });
 
-  $("profil-buka-admin").addEventListener("click", () => ctx.bukaAdmin());
   $("profil-buka-admin-2").addEventListener("click", () => ctx.bukaAdmin());
-  $("profil-login").addEventListener("click", () => ctx.login());
   akunBtn.addEventListener("click", () => ctx.login());
   temaSwitch.addEventListener("click", () => ctx.gantiTema());
 
@@ -294,15 +287,14 @@ export function initProfil(ctx) {
     const email = google
       ? user.email || user.providerData?.find((p) => p.email)?.email || ""
       : "";
-    emailEl.textContent = google ? email : "Masuk sebagai tamu";
-    emailEl.hidden = !emailEl.textContent;
+    emailEl.textContent = email;
+    emailEl.hidden = !email;
 
     bioEl.hidden = !google;
     bioEl.classList.toggle("kosong", !bio);
     bioEl.textContent = bio || "Belum ada bio.";
 
     // Ubah profil: hanya akun Google
-    tamuKartu.hidden = google;
     editKartu.hidden = !google;
     if (google) {
       const adminAktif = status === "admin";
@@ -319,12 +311,8 @@ export function initProfil(ctx) {
     }
 
     // Info akun
-    infoJenis.textContent = google ? "Akun Google" : "Tamu (anonim)";
-    infoEmailBaris.hidden = !email;
-    infoEmail.textContent = email;
     infoId.textContent = user.uid.slice(0, 6);
     infoGabung.textContent = tanggalPanjang(user.metadata?.creationTime);
-    infoMasuk.textContent = tanggalPanjang(user.metadata?.lastSignInTime);
 
     // Jatah tamu
     limitKartu.hidden = google;
@@ -341,7 +329,7 @@ export function initProfil(ctx) {
     akunBtn.classList.toggle("biasa", google);
     akunInfo.textContent = google
       ? "Setelah keluar kamu kembali jadi tamu."
-      : "Untuk kirim foto atau file dan pesan tanpa batas.";
+      : "Login untuk foto profil, bio, kirim foto/file, dan pesan tanpa batas. Nama tamu diubah di kolom nama halaman Chat.";
   }
 
   return { segarkan: render, setUser };

@@ -94,7 +94,6 @@ export function initNav({ onPindah } = {}) {
   // Kartu akun kecil di bagian bawah menu samping
   const akunAvatar = document.getElementById("nav-akun-avatar");
   const akunNama = document.getElementById("nav-akun-nama");
-  const akunStatus = document.getElementById("nav-akun-status");
   let akunKunci = "";
 
   function setAkun({ nama, uid, foto, status }) {
@@ -106,8 +105,6 @@ export function initNav({ onPindah } = {}) {
       );
     }
     akunNama.textContent = nama || "Tamu";
-    akunStatus.textContent =
-      { admin: "Admin", user: "Akun Google", anon: "Tamu" }[status] || "";
   }
 
   return { pindah, aktif: () => aktif, setBadge, setAkun };

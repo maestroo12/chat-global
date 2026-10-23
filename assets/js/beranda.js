@@ -1,7 +1,7 @@
 import { el, buatAvatar, waktuRingkas } from "./ui.js";
 
-const MAKS_ONLINE = 8;
-const JUMLAH_PESAN = 5;
+const MAKS_ONLINE = 5;
+const JUMLAH_PESAN = 4;
 
 // Panel Beranda: sapaan, obrolan terbaru, siapa yang online, dan pembaruan.
 // Semua data datang dari main.js lewat `ctx` (panel ini tidak menyentuh Firebase).
@@ -27,12 +27,22 @@ export function initBeranda(ctx) {
     el(
       "ul",
       { class: "poin" },
-      n.points.slice(0, 3).map((p) => el("li", { text: p })),
+      n.points.slice(0, 2).map((p) => el("li", { text: p })),
     ),
   );
 
+  // Render ulang hanya kalau datanya benar-benar berubah (hindari bangun ulang
+  // avatar & baca foto berulang tiap ada sinyal segarkan).
+  let kunciPesan = "";
+  let kunciOnline = "";
+
   function renderPesan() {
     const daftar = ctx.pesanTerbaru(JUMLAH_PESAN);
+    const kunci = daftar
+      .map((p) => [p.key, p.nama, p.teks, p.ts, p.baru ? 1 : 0, p.verified ? 1 : 0].join("\u0001"))
+      .join("\u0002");
+    if (kunci === kunciPesan) return;
+    kunciPesan = kunci;
     if (!daftar.length) {
       feed.replaceChildren(
         el("li", {
@@ -71,6 +81,12 @@ export function initBeranda(ctx) {
 
   function renderOnline(online) {
     onlineJumlah.textContent = String(online.length);
+    const kunci = online
+      .slice(0, MAKS_ONLINE)
+      .map((o) => [o.uid, o.nama, o.saya ? 1 : 0, o.admin ? 1 : 0].join("\u0001"))
+      .join("\u0002") + "|" + online.length;
+    if (kunci === kunciOnline) return;
+    kunciOnline = kunci;
     if (!online.length) {
       onlineList.replaceChildren(
         el("li", { class: "kosong", text: "Tidak ada yang online." }),
@@ -105,22 +121,15 @@ export function initBeranda(ctx) {
     judul.textContent = nama ? `Halo, ${nama}` : "Halo!";
 
     const online = ctx.online();
-    const lain = online.filter((o) => !o.saya).length;
     const belum = ctx.belumBaca();
-    const kalimat = [
-      lain === 0
-        ? "Belum ada orang lain yang online."
-        : `${lain} orang lain sedang online.`,
-    ];
-    if (belum > 0) kalimat.push(`${belum} pesan di chat global belum kamu baca.`);
-    sub.textContent = kalimat.join(" ");
+    sub.textContent = belum > 0 ? `${belum} pesan di chat global belum kamu baca.` : "";
+    sub.hidden = belum <= 0;
 
+    // Ajakan login ringkas (jatah tamu ada di Profil, tidak diulang di sini)
     tamu.hidden = google;
     if (!google) {
-      const l = ctx.limit();
       tamuInfo.textContent =
-        "Login Google untuk kirim foto atau file, kirim pesan tanpa batas, " +
-        `dan dapat centang terverifikasi. Sisa pesan tamu hari ini: ${l.pesan.sisa} dari ${l.pesan.maks}.`;
+        "Kamu masuk sebagai tamu. Login Google untuk kirim foto/file dan pesan tanpa batas.";
     }
 
     renderPesan();

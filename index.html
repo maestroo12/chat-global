@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#0f766e" />
+    <meta name="theme-color" content="#213a57" />
     <script src="assets/js/theme-init.js"></script>
     <link rel="stylesheet" href="assets/css/style.css" />
     <link rel="stylesheet" href="assets/css/panels.css" />
@@ -56,7 +56,6 @@
           <span id="nav-akun-avatar"></span>
           <span class="nav-akun-info">
             <span id="nav-akun-nama" class="nav-akun-nama"></span>
-            <span id="nav-akun-status" class="nav-akun-status"></span>
           </span>
         </button>
       </nav>
@@ -79,12 +78,10 @@
                   <h3 id="beranda-judul" class="hero-judul">Halo!</h3>
                   <p id="beranda-sub" class="hero-sub"></p>
                 </div>
-                <button type="button" class="btn utama" data-nav="chat">Buka chat global</button>
               </div>
 
               <div class="grid">
                 <section id="beranda-tamu" class="card card-ajak" hidden>
-                  <h4>Kamu masuk sebagai tamu</h4>
                   <p id="beranda-tamu-info" class="card-teks"></p>
                   <button type="button" id="beranda-login" class="btn utama">Login Google</button>
                 </section>
@@ -107,10 +104,10 @@
 
                 <section class="card card-baru">
                   <div class="card-head">
-                    <h4>Yang baru di FitChat</h4>
+                    <h4>Yang baru</h4>
+                    <button type="button" id="beranda-news-buka" class="link-btn">Semua</button>
                   </div>
                   <div id="beranda-news"></div>
-                  <button type="button" id="beranda-news-buka" class="link-btn">Lihat semua pembaruan</button>
                 </section>
               </div>
             </div>
@@ -236,15 +233,6 @@
               </section>
 
               <div class="profil-utama">
-                <section id="profil-tamu" class="card card-ajak" hidden>
-                  <h4>Lengkapi profilmu</h4>
-                  <p class="card-teks">
-                    Tamu belum punya foto profil, bio, dan nama tampilan sendiri. Login
-                    Google untuk mengubahnya. Nama tamu diubah lewat kolom nama di halaman Chat.
-                  </p>
-                  <button type="button" id="profil-login" class="btn utama">Login Google</button>
-                </section>
-
                 <section id="profil-edit-kartu" class="card" hidden>
                   <h4>Ubah profil</h4>
                   <form id="profil-form" novalidate>
@@ -255,7 +243,6 @@
                     </label>
                     <p id="profil-nama-admin" class="hint" hidden>
                       Nama tampilan adminmu diatur lewat Panel admin.
-                      <button type="button" id="profil-buka-admin" class="link-btn">Buka panel admin</button>
                     </p>
                     <label class="field">
                       <span>Bio</span>
@@ -273,14 +260,6 @@
                   <h4>Info akun</h4>
                   <dl class="info">
                     <div class="info-row">
-                      <dt>Jenis akun</dt>
-                      <dd id="info-jenis"></dd>
-                    </div>
-                    <div id="info-email-baris" class="info-row">
-                      <dt>Email</dt>
-                      <dd id="info-email"></dd>
-                    </div>
-                    <div class="info-row">
                       <dt>ID pengguna</dt>
                       <dd>
                         <span id="info-id"></span>
@@ -290,10 +269,6 @@
                     <div class="info-row">
                       <dt>Bergabung</dt>
                       <dd id="info-gabung"></dd>
-                    </div>
-                    <div class="info-row">
-                      <dt>Terakhir masuk</dt>
-                      <dd id="info-masuk"></dd>
                     </div>
                   </dl>
                 </section>
@@ -315,7 +290,7 @@
                   <div class="setting-row">
                     <div class="setting-teks">
                       <span class="setting-judul" id="profil-tema-label">Mode gelap</span>
-                      <span class="setting-sub">Kalau belum dipilih, mengikuti setelan perangkat.</span>
+                      <span class="setting-sub">Bawaan: ikut setelan perangkat.</span>
                     </div>
                     <button type="button" id="profil-tema" class="switch" role="switch" aria-checked="false" aria-labelledby="profil-tema-label"></button>
                   </div>

@@ -6,8 +6,7 @@
 // Hosting, mis. GitHub Pages). Ambil dari: Firebase Console -> Authentication ->
 // Sign-in method -> Google -> Web SDK configuration -> "Web client ID".
 // Bentuknya: 1234567890-xxxxxxxx.apps.googleusercontent.com
-export const GOOGLE_CLIENT_ID =
-  "681085064123-qer486qqqntmp0l8l4ji9l3vm16nfcfl.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "681085064123-qer486qqqntmp0l8l4ji9l3vm16nfcfl.apps.googleusercontent.com";
 
 // true kalau situs dibuka dari Firebase Hosting (domain *.web.app / *.firebaseapp.com).
 // Di sana /__/auth/handler tersedia di domain yang sama, jadi login Firebase

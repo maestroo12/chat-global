@@ -120,7 +120,7 @@
   line-height: 20px;
   text-align: center;
   color: #fff;
-  background: var(--teal);
+  background: var(--primary);
   border-radius: 999px;
 }
 
@@ -157,11 +157,6 @@
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.nav-akun-status {
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .nav-item:focus-visible,
@@ -231,7 +226,7 @@
   right: 3px;
   width: 9px;
   height: 9px;
-  background: #f87171;
+  background: #e5534b;
   border: 2px solid var(--header);
   border-radius: 50%;
 }
@@ -287,9 +282,21 @@
   color: var(--muted);
 }
 
-/* Kartu ajakan (login): garis aksen di sisi kiri */
+/* Kartu ajakan (login): garis aksen di sisi kiri, teks dan tombol satu baris */
 .card-ajak {
-  border-left: 4px solid var(--teal);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-left: 4px solid var(--primary);
+}
+
+.card-ajak .card-teks {
+  flex: 1 1 240px;
+  margin: 0;
 }
 
 .jumlah {
@@ -323,11 +330,11 @@
 
 .btn.utama {
   color: #fff;
-  background: var(--teal);
+  background: var(--primary);
 }
 
 .btn.utama:hover:not(:disabled) {
-  background: var(--teal-dark);
+  background: var(--primary-dark);
 }
 
 .btn.biasa {
@@ -366,6 +373,10 @@
 
 .hero-teks {
   min-width: 0;
+}
+
+.hero-teks:has(.hero-sub[hidden]) .hero-judul {
+  margin-bottom: 0;
 }
 
 .hero-judul {
@@ -451,7 +462,7 @@
   width: 8px;
   height: 8px;
   margin-left: auto;
-  background: var(--teal);
+  background: var(--primary);
   border-radius: 50%;
   align-self: center;
 }
@@ -697,6 +708,11 @@
   color: var(--danger);
 }
 
+/* Keterangan kosong tidak boleh menyisakan celah di kartu flex */
+.kabar:empty {
+  display: none;
+}
+
 /* Info akun */
 .info {
   display: flex;
@@ -766,7 +782,7 @@
 .meter > span {
   display: block;
   height: 100%;
-  background: var(--teal);
+  background: var(--primary);
   border-radius: inherit;
   transition: width 0.3s;
 }
@@ -834,7 +850,7 @@
 }
 
 .switch[aria-checked="true"] {
-  background: var(--teal);
+  background: var(--primary);
 }
 
 .switch[aria-checked="true"]::after {

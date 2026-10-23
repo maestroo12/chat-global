@@ -164,7 +164,7 @@ function temaTersimpan() {
 function terapkanTema(tema) {
   const gelap = tema === "dark";
   document.documentElement.dataset.theme = tema;
-  if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
+  if (themeMeta) themeMeta.content = gelap ? "#1b2c42" : "#213a57";
 }
 
 function gantiTema() {
@@ -338,7 +338,7 @@ function newsTerbaca() {
   }
 }
 
-// Titik merah di semua tombol lonceng (header chat & bilah Beranda)
+// Titik merah di tombol lonceng (bilah Beranda)
 function perbaruiTitikNews() {
   const baru = newsTerbaca() !== NEWS[0].id;
   document
@@ -802,31 +802,18 @@ function buatLampiran(f) {
   return btn;
 }
 
-// Status di samping nama: Admin / User / Anon. Teks polos tanpa latar, ikut warna tema.
-// Label User/Admin baru ditampilkan setelah daftar admin selesai dibaca, supaya admin
-// tidak sempat tampil sebagai "User" lalu berubah sendiri.
+// Label di samping nama: hanya "Admin". User biasa sudah ditandai centang (✓) dan tamu
+// tidak punya centang, jadi label "User"/"Anon" di tiap pesan cuma memakan tempat.
+// Label baru muncul setelah daftar admin selesai dibaca (kosong = disembunyikan CSS).
 function terapkanStatus(el, uid, verified) {
   el.className = "status-badge";
   el.removeAttribute("title");
+  el.textContent = "";
 
-  if (!verified) {
-    el.classList.add("status-anon");
-    el.textContent = "Anon";
-    el.title = "Pengguna tamu";
-    return;
-  }
-  if (!admin.adminSiap()) {
-    el.textContent = "";
-    return;
-  }
-  if (admin.isAdmin(uid)) {
+  if (verified && admin.adminSiap() && admin.isAdmin(uid)) {
     el.classList.add("status-admin");
     el.textContent = "Admin";
     el.title = "Administrator";
-  } else {
-    el.classList.add("status-user");
-    el.textContent = "User";
-    el.title = "Akun Google terverifikasi";
   }
 }
 
@@ -2437,8 +2424,10 @@ panelApi.render = () => {
     foto: fotoAkun(currentUser),
     status: statusAkun(),
   });
-  beranda.segarkan();
-  profil.segarkan();
+  // Hanya panel yang sedang dibuka yang digambar ulang. Panel lain digambar saat
+  // dibuka (onPindah memanggil render ini lagi), jadi tidak ada kerja yang sia-sia.
+  if (panelAktif === "beranda") beranda.segarkan();
+  else if (panelAktif === "profil") profil.segarkan();
 };
 
 // ===== STATUS AUTH =====

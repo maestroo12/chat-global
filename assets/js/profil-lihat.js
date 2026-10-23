@@ -60,7 +60,10 @@ export function initProfilLihat(ctx) {
       if (url) ctx.bukaFoto(url);
     });
 
-    const chip = el("span", { class: "chip" + (admin ? " admin" : ""), text: admin ? "Admin" : "Memuat..." });
+    // Satu baris saja: label (hanya Admin / Tamu) + status online. Akun Google biasa
+    // tidak diberi label (sudah jelas dari centang di chat).
+    const chip = el("span", { class: "chip" + (admin ? " admin" : ""), text: admin ? "Admin" : "Tamu" });
+    chip.hidden = !admin && pasti !== false;
     const status = barisStatus();
     isiStatus(status, uid);
     const bioEl = el("p", { class: "profil-bio kosong", hidden: true });
@@ -68,8 +71,7 @@ export function initProfilLihat(ctx) {
     const isi = [
       avatarBox,
       el("h3", { class: "profil-nama", text: tampilNama + (kamu ? " (kamu)" : "") }),
-      chip,
-      status,
+      el("div", { class: "lihat-meta" }, chip, status),
       bioEl,
     ];
     if (kamu && !ctx.user()?.isAnonymous) {
@@ -98,14 +100,15 @@ export function initProfilLihat(ctx) {
 
     const bio = bioSnap?.val()?.bio || "";
     const google = admin || pasti === true || !!bio || !!url;
-    const jenis = admin ? "Admin" : google ? "Akun Google" : pasti === false ? "Tamu" : "Pengguna";
-    chip.textContent = jenis;
+    const tamuSaja = !admin && !google && pasti === false;
+    chip.textContent = admin ? "Admin" : "Tamu";
+    chip.hidden = !admin && !tamuSaja;
     avatarBox.classList.toggle("zoom", !!url);
 
-    // Tamu tidak punya bio; akun Google selalu menampilkan bio (atau keterangan kosong)
-    bioEl.hidden = jenis === "Tamu";
-    bioEl.textContent = bio || "Belum ada bio.";
-    bioEl.classList.toggle("kosong", !bio);
+    // Bio hanya tampil kalau ada isinya (tidak ada keterangan "Belum ada bio" untuk orang lain)
+    bioEl.hidden = !bio;
+    bioEl.textContent = bio;
+    bioEl.classList.remove("kosong");
     isiStatus(status, uid);
   }
 
