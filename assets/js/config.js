@@ -35,7 +35,7 @@ export const firebaseConfig = {
 // Batas aplikasi. Angka yang berkaitan dengan Rules harus ikut disamakan
 // di database.rules.json (500 teks, 512000 byte file, 100 pesan/hari tamu).
 export const LIMITS = {
-  MAX_ANON: 30, // batas pesan tamu per 24 jam
+  MAX_ANON: 25, // batas pesan tamu per 24 jam
   MAX_ANON_NAME_CHANGES: 5, // batas perubahan nama tamu per 24 jam
   DAY_MS: 24 * 60 * 60 * 1000,
   MAX_RIWAYAT: 1000, // jumlah pesan terbaru yang bisa dibuka
