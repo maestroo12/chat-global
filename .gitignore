@@ -7,3 +7,5 @@ firebase-debug.log*
 .env.*
 .vscode/
 .idea/
+
+firebase.json

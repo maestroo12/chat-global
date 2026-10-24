@@ -120,7 +120,7 @@
   line-height: 20px;
   text-align: center;
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: 999px;
 }
 
@@ -226,7 +226,7 @@
   right: 3px;
   width: 9px;
   height: 9px;
-  background: #e5534b;
+  background: #f87171;
   border: 2px solid var(--header);
   border-radius: 50%;
 }
@@ -291,7 +291,7 @@
   gap: 12px;
   padding-top: 14px;
   padding-bottom: 14px;
-  border-left: 4px solid var(--primary);
+  border-left: 4px solid var(--teal);
 }
 
 .card-ajak .card-teks {
@@ -330,11 +330,11 @@
 
 .btn.utama {
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
 }
 
 .btn.utama:hover:not(:disabled) {
-  background: var(--primary-dark);
+  background: var(--teal-dark);
 }
 
 .btn.biasa {
@@ -462,7 +462,7 @@
   width: 8px;
   height: 8px;
   margin-left: auto;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: 50%;
   align-self: center;
 }
@@ -782,7 +782,7 @@
 .meter > span {
   display: block;
   height: 100%;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: inherit;
   transition: width 0.3s;
 }
@@ -850,7 +850,7 @@
 }
 
 .switch[aria-checked="true"] {
-  background: var(--primary);
+  background: var(--teal);
 }
 
 .switch[aria-checked="true"]::after {

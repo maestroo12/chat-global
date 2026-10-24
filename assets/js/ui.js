@@ -32,23 +32,11 @@ export function inisial(nama) {
   return (depan + belakang).toUpperCase();
 }
 
-// Warna avatar stabil per pengguna (diturunkan dari uid/nama). Palet redup terpilih
-// supaya cocok dengan tema dan tidak ramai.
-const WARNA_AVATAR = [
-  "hsl(212 38% 34%)",
-  "hsl(200 22% 36%)",
-  "hsl(150 24% 30%)",
-  "hsl(28 42% 38%)",
-  "hsl(8 40% 40%)",
-  "hsl(42 40% 34%)",
-  "hsl(174 28% 30%)",
-  "hsl(340 26% 38%)",
-];
-
+// Warna avatar stabil per pengguna (diturunkan dari uid/nama)
 function warna(kunci) {
   let h = 0;
   for (const c of String(kunci || "")) h = (h * 31 + c.codePointAt(0)) >>> 0;
-  return WARNA_AVATAR[h % WARNA_AVATAR.length];
+  return h % 360;
 }
 
 // Pasang / ganti / buang foto di dalam avatar. Kalau gagal dimuat tetap tampil inisial.
@@ -88,7 +76,7 @@ export function buatAvatar(
     "aria-hidden": "true",
     text: inisial(nama),
   });
-  a.style.backgroundColor = warna(kunci || nama);
+  a.style.backgroundColor = `hsl(${warna(kunci || nama)} 42% 36%)`;
 
   const uid = UID_RE.test(kunci || "") ? kunci : "";
   if (uid) a.dataset.uid = uid;
@@ -150,4 +138,21 @@ export function tanggalPanjang(nilai) {
     month: "long",
     year: "numeric",
   });
+}
+
+// "baru saja", "5 mnt lalu", "3 jam lalu", "2 hari lalu", lalu tanggal singkat
+export function waktuRelatif(ts, sekarang = Date.now()) {
+  if (!ts) return "";
+  const selisih = Math.max(0, sekarang - ts);
+  const menit = Math.floor(selisih / 60000);
+  if (menit < 1) return "baru saja";
+  if (menit < 60) return `${menit} mnt lalu`;
+  const jam = Math.floor(menit / 60);
+  if (jam < 24) return `${jam} jam lalu`;
+  const hari = Math.floor(jam / 24);
+  if (hari < 7) return `${hari} hari lalu`;
+  const d = new Date(ts);
+  const opsi = { day: "numeric", month: "short" };
+  if (d.getFullYear() !== new Date(sekarang).getFullYear()) opsi.year = "numeric";
+  return d.toLocaleDateString("id-ID", opsi);
 }

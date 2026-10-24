@@ -53,6 +53,7 @@ import { initProfil } from "./profil.js";
 import { fotoAkun, buatAvatar } from "./ui.js";
 import { initFoto, kosongkanFoto } from "./foto.js";
 import { initProfilLihat } from "./profil-lihat.js";
+import { initPostingan } from "./postingan.js";
 
 // ===== INIT =====
 const app = initializeApp(firebaseConfig);
@@ -164,7 +165,7 @@ function temaTersimpan() {
 function terapkanTema(tema) {
   const gelap = tema === "dark";
   document.documentElement.dataset.theme = tema;
-  if (themeMeta) themeMeta.content = gelap ? "#1b2c42" : "#213a57";
+  if (themeMeta) themeMeta.content = gelap ? "#0b3f3a" : "#0f766e";
 }
 
 function gantiTema() {
@@ -228,7 +229,7 @@ let hasMore = true;
 let loadingOlder = false;
 let hariTerakhir = null;
 let menuTarget = null;
-let panelAktif = null; // panel yang sedang dibuka: beranda | chat | profil
+let panelAktif = null; // panel yang sedang dibuka: beranda | postingan | chat | profil
 const panelApi = {}; // render semua panel, diisi di bagian PANEL
 let panelTimer = null;
 
@@ -2400,6 +2401,24 @@ const profil = initProfil({
   bukaAdmin: () => document.getElementById("admin-btn").click(),
 });
 
+// Panel Postingan: feed realtime dengan suka dan komentar (postingan.js)
+const postingan = initPostingan({
+  db,
+  user: () => currentUser,
+  isGoogle: () => isGoogle(currentUser),
+  nama: namaSaya,
+  namaUntuk: (uid, nama) => admin.namaUntuk(uid, nama),
+  isAdmin: (uid) => admin.isAdmin(uid),
+  adminSiap: () => admin.adminSiap(),
+  diblokir: () => diblokir,
+  // Admin mengatur batas pesan 0 = akun ini tidak boleh mengirim apa pun
+  dibisukan: () => admin.pengaturanSaya().msgLimit === 0,
+  sekarang: () => Math.round(Date.now() + serverOffset),
+  aktif: () => panelAktif === "postingan",
+  setBadge: (n) => nav.setBadge("postingan", n),
+  login: masukKeluar,
+});
+
 // Profil orang lain (hanya lihat), terbuka saat foto profil diketuk
 initProfilLihat({
   db,
@@ -2428,6 +2447,7 @@ panelApi.render = () => {
   // dibuka (onPindah memanggil render ini lagi), jadi tidak ada kerja yang sia-sia.
   if (panelAktif === "beranda") beranda.segarkan();
   else if (panelAktif === "profil") profil.segarkan();
+  postingan.segarkan(panelAktif === "postingan"); // selalu: titik baru di menu
 };
 
 // ===== STATUS AUTH =====
@@ -2467,6 +2487,7 @@ onAuthStateChanged(auth, (user) => {
     uidChat = user.uid;
     kosongkanFoto();
     profil.setUser(user);
+    postingan.setUser(user);
   }
   mulaiListener();
   mulaiPresence(user);

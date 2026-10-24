@@ -1,0 +1,333 @@
+/* ---------- Panel Postingan ---------- */
+:root {
+  --suka: #e0245e;
+}
+
+:root[data-theme="dark"] {
+  --suka: #ff6b8b;
+}
+
+.post-halaman {
+  max-width: 640px;
+}
+
+/* Kartu tulis postingan */
+.post-tulis textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 16px; /* cegah auto-zoom di iOS */
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.post-tulis textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--tint-me);
+}
+
+.post-tulis textarea:disabled {
+  opacity: 0.6;
+}
+
+.post-tulis-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.post-hitung {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.post-tulis-tamu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-tulis-tamu p {
+  flex: 1 1 220px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Daftar */
+.post-daftar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.post-status {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.post-status.galat {
+  color: var(--danger);
+}
+
+.post-lebih {
+  align-self: center;
+}
+
+/* Kartu postingan */
+.post-kartu {
+  padding: 16px 16px 8px;
+}
+
+.post-kepala {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post-meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.post-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.post-nama {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.post-baris .status-badge {
+  margin-left: 0;
+}
+
+.post-waktu {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.post-hapus {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.post-hapus:hover,
+.post-hapus:focus-visible {
+  color: var(--danger);
+  background: var(--soft);
+}
+
+.post-teks {
+  margin: 12px 0 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Tombol suka & komentar */
+.post-aksi {
+  display: flex;
+  gap: 4px;
+  margin: 8px -8px 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.aksi-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.aksi-btn:hover {
+  background: var(--soft);
+  color: var(--text);
+}
+
+.aksi-btn:focus-visible,
+.post-hapus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.aksi-btn.aktif {
+  color: var(--suka);
+}
+
+.aksi-btn.aktif svg path {
+  fill: currentColor;
+}
+
+.aksi-btn[aria-expanded="true"] {
+  color: var(--accent);
+}
+
+.aksi-jumlah {
+  min-width: 1ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.aksi-btn svg.pop {
+  animation: suka-pop 0.35s ease;
+}
+
+@keyframes suka-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aksi-btn svg.pop {
+    animation: none;
+  }
+}
+
+/* Komentar */
+.post-komentar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 -4px;
+  padding: 8px 4px 12px;
+}
+
+.komentar-daftar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.komentar-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.komentar-isi {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-radius: 14px;
+}
+
+.komentar-atas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.komentar-atas .post-baris {
+  flex: 1;
+}
+
+.komentar-atas .post-nama {
+  font-size: 13px;
+}
+
+.komentar-atas .post-hapus {
+  width: 26px;
+  height: 26px;
+}
+
+.komentar-teks {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.komentar-form {
+  display: flex;
+  gap: 8px;
+}
+
+.komentar-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 16px; /* cegah auto-zoom di iOS */
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.komentar-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--tint-me);
+}
+
+.komentar-tamu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 799px) {
+  #panel-postingan .panel-body {
+    padding: 14px 12px;
+  }
+}

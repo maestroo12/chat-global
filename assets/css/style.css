@@ -1,85 +1,80 @@
-/* ---------- Tema ----------
-   Palet klasik: biru tinta (navy) + abu-abu netral hangat. Warna solid, tanpa
-   gradasi. Semua warna aplikasi bersumber dari variabel di bawah ini, jadi
-   cukup ubah di sini untuk ganti tampilan. */
+/* ---------- Tema ---------- */
 :root {
   color-scheme: light;
 
-  --primary: #25507f;
+  --teal: #0f766e;
   /* isi tombol, ikon, badge */
-  --primary-dark: #1b3d63;
-  --accent: #25507f;
+  --teal-dark: #0b5a54;
+  --accent: #0f766e;
   /* teks & garis aksen */
-  --header: #213a57;
-  --online: #3d9a68;
+  --header: #0f766e;
 
-  --bg: #e4e2dd;
-  --chat-bg: #eceae5;
-  --me: #d3dfec;
-  --other: #fdfcfa;
-  --text: #1d232b;
-  --muted: #596470;
-  --tick-read: #1c6dd0;
-  --line: #d9d5cd;
+  --bg: #e9ecef;
+  --chat-bg: #efeae2;
+  --me: #d6f2dc;
+  --other: #ffffff;
+  --text: #1f2933;
+  --muted: #6b7785;
+  --tick-read: #1b8fd6;
+  --line: #dde2e7;
 
-  --surface: #fbfaf8;
-  --panel: #f3f1ed;
-  --hover: #e8edf3;
-  --soft: #e9e6e0;
-  --btn-soft: #efece7;
-  --btn-soft-hover: #e4e0d9;
-  --img-ph: #dcd8d0;
-  --reply-bg: #e6ecf3;
-  --flash: #f3e2a0;
-  --danger: #b3261e;
-  --disabled: #aaa59c;
-  --day-sep: rgba(251, 250, 248, 0.85);
+  --surface: #ffffff;
+  --panel: #f7f8f9;
+  --hover: #e6f4f2;
+  --soft: #eef0f2;
+  --btn-soft: #f3f5f6;
+  --btn-soft-hover: #e9edef;
+  --img-ph: #e3e7ea;
+  --reply-bg: #e8f5f1;
+  --flash: #fff3b0;
+  --danger: #b42318;
+  --disabled: #9aa5b1;
+  --day-sep: rgba(255, 255, 255, 0.8);
 
-  --tint: rgba(37, 80, 127, 0.08);
-  --tint-me: rgba(37, 80, 127, 0.14);
-  --tint-hover: rgba(37, 80, 127, 0.22);
-  --tint-border: rgba(37, 80, 127, 0.18);
+  --tint: rgba(15, 118, 110, 0.08);
+  --tint-me: rgba(15, 118, 110, 0.14);
+  --tint-hover: rgba(15, 118, 110, 0.22);
+  --tint-border: rgba(15, 118, 110, 0.18);
 
-  --shadow: 0 8px 30px rgba(20, 25, 35, 0.12);
-  --bubble-shadow: 0 1px 1px rgba(20, 25, 35, 0.08);
-  --backdrop: rgba(20, 25, 35, 0.45);
+  --shadow: 0 8px 30px rgba(15, 30, 45, 0.12);
+  --bubble-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  --backdrop: rgba(15, 30, 45, 0.45);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --primary: #3b6ea5;
-  --primary-dark: #2f5b8c;
-  --accent: #8fb5e0;
-  --header: #1b2c42;
-  --online: #5bbf8a;
+  --teal: #0f766e;
+  --teal-dark: #0b5a54;
+  --accent: #5eead4;
+  --header: #0b3f3a;
 
-  --bg: #0f1114;
-  --chat-bg: #121417;
-  --me: #263b55;
-  --other: #23272d;
-  --text: #e4e7eb;
-  --muted: #98a1ac;
-  --tick-read: #6ab0f3;
-  --line: #2b3037;
+  --bg: #070b0e;
+  --chat-bg: #0b141a;
+  --me: #144d44;
+  --other: #1f2c34;
+  --text: #e7edf1;
+  --muted: #93a1ad;
+  --tick-read: #53bdeb;
+  --line: #26343d;
 
-  --surface: #17191d;
-  --panel: #1d2025;
-  --hover: #222b36;
-  --soft: #262b32;
-  --btn-soft: #262a30;
-  --btn-soft-hover: #2f343c;
-  --img-ph: #2b3037;
-  --reply-bg: #1f2b3a;
-  --flash: #54471c;
-  --danger: #ff8d85;
-  --disabled: #4a515a;
-  --day-sep: rgba(23, 25, 29, 0.85);
+  --surface: #111b21;
+  --panel: #172229;
+  --hover: #1d2f33;
+  --soft: #22313a;
+  --btn-soft: #1f2c34;
+  --btn-soft-hover: #2a3a44;
+  --img-ph: #26343d;
+  --reply-bg: #12302d;
+  --flash: #5c5320;
+  --danger: #ff8a80;
+  --disabled: #3b4a54;
+  --day-sep: rgba(17, 27, 33, 0.85);
 
-  --tint: rgba(143, 181, 224, 0.1);
-  --tint-me: rgba(143, 181, 224, 0.16);
-  --tint-hover: rgba(143, 181, 224, 0.24);
-  --tint-border: rgba(143, 181, 224, 0.22);
+  --tint: rgba(94, 234, 212, 0.1);
+  --tint-me: rgba(94, 234, 212, 0.16);
+  --tint-hover: rgba(94, 234, 212, 0.24);
+  --tint-border: rgba(94, 234, 212, 0.22);
 
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   --bubble-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
@@ -171,7 +166,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--online);
+  background: #4ade80;
 }
 
 #header-actions {
@@ -352,7 +347,7 @@ body {
   font-weight: 700;
   line-height: 1;
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: 50%;
   vertical-align: 1px;
 }
@@ -508,7 +503,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: 8px;
 }
 
@@ -611,7 +606,7 @@ body {
   width: 44px;
   height: 44px;
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
   border: 0;
   border-radius: 50%;
   cursor: pointer;
@@ -621,7 +616,7 @@ body {
 }
 
 #send-btn:hover {
-  background: var(--primary-dark);
+  background: var(--teal-dark);
 }
 
 #send-btn:active {
@@ -980,7 +975,7 @@ button:focus-visible {
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
   border-radius: 999px;
 }
 
@@ -1195,7 +1190,7 @@ button:focus-visible {
 }
 
 .lihat-dot.aktif {
-  background: var(--online);
+  background: #22a06b;
 }
 
 .lihat-aksi {
@@ -1408,11 +1403,11 @@ button:focus-visible {
 
 button[type="submit"].admin-act {
   color: #fff;
-  background: var(--primary);
+  background: var(--teal);
 }
 
 button[type="submit"].admin-act:hover {
-  background: var(--primary-dark);
+  background: var(--teal-dark);
 }
 
 .admin-act.danger {
@@ -1597,7 +1592,7 @@ button[type="submit"].admin-act.danger:hover {
 }
 
 .admin-dot.aktif {
-  background: var(--online);
+  background: #22a06b;
 }
 
 .admin-pesan {
@@ -1657,7 +1652,7 @@ button[type="submit"].admin-act.danger:hover {
   width: 20px;
   height: 20px;
   margin: 0;
-  accent-color: var(--primary);
+  accent-color: var(--teal);
 }
 
 .admin-blok .hint {

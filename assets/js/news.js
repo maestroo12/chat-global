@@ -5,13 +5,14 @@ import { formatUkuran } from "./utils.js";
 // berubah, titik merah muncul lagi di tombol lonceng untuk semua orang.
 export const NEWS = [
   {
-    id: "2026-10-23-warna",
-    date: "23 Okt 2026",
-    title: "Warna baru",
+    id: "2026-10-24-postingan",
+    date: "24 Okt 2026",
+    title: "Panel Postingan",
     points: [
-      "Tampilan diganti ke warna biru tinta dan abu-abu netral yang lebih kalem. Tidak lagi hijau ala WhatsApp.",
-      "Mode terang dan gelap tetap ada, diatur lewat saklar di Profil → Pengaturan.",
-      "Warna avatar yang tanpa foto juga dirapikan jadi palet yang lebih redup.",
+      "Menu baru Postingan: tulis postingan yang langsung tampil realtime untuk semua orang.",
+      "Beri suka dan tulis komentar di tiap postingan. Jumlah suka dan komentar ikut berubah seketika.",
+      "Membuat postingan dan berkomentar khusus akun Google. Tamu tetap bisa melihat dan memberi suka.",
+      "Titik di menu Postingan muncul kalau ada postingan baru dari orang lain.",
     ],
   },
   {

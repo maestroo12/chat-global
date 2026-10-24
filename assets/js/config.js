@@ -35,7 +35,7 @@ export const firebaseConfig = {
 // Batas aplikasi. Angka yang berkaitan dengan Rules harus ikut disamakan
 // di database.rules.json (500 teks, 512000 byte file, 100 pesan/hari tamu).
 export const LIMITS = {
-  MAX_ANON: 25, // batas pesan tamu per 24 jam
+  MAX_ANON: 30, // batas pesan tamu per 24 jam
   MAX_ANON_NAME_CHANGES: 5, // batas perubahan nama tamu per 24 jam
   DAY_MS: 24 * 60 * 60 * 1000,
   MAX_RIWAYAT: 1000, // jumlah pesan terbaru yang bisa dibuka
@@ -43,4 +43,11 @@ export const LIMITS = {
   MAX_TEKS: 500,
   MAX_IMG_BYTES: 350 * 1024, // foto dikecilkan otomatis sampai di bawah ini
   MAX_FILE_BYTES: 500 * 1024, // batas file biasa
+
+  // Panel Postingan (angka MAX_POST dan MAX_KOMENTAR harus sama dengan database.rules.json)
+  MAX_POST: 500, // panjang satu postingan
+  MAX_KOMENTAR: 300, // panjang satu komentar
+  POST_HALAMAN: 20, // jumlah postingan per muatan
+  JEDA_POST_MS: 5000, // jeda minimal antar postingan (di sisi klien)
+  JEDA_KOMENTAR_MS: 2000, // jeda minimal antar komentar (di sisi klien)
 };

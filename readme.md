@@ -10,7 +10,8 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 
 ## Fitur
 
-- **Tiga panel**: Beranda, Chat, dan Profil. Di laptop/PC menunya di samping dan area kerjanya lebar, di HP menunya di bawah. Alamat tiap panel: `#/beranda`, `#/chat`, `#/profil`.
+- **Empat panel**: Beranda, Postingan, Chat, dan Profil. Di laptop/PC menunya di samping dan area kerjanya lebar, di HP menunya di bawah. Alamat tiap panel: `#/beranda`, `#/postingan`, `#/chat`, `#/profil`.
+- **Postingan** (feed realtime): akun Google bisa menulis postingan (maks. 500 karakter) yang langsung muncul di layar semua orang tanpa refresh. Setiap postingan bisa diberi **suka** (semua pengguna, termasuk tamu) dan **komentar** (akun Google, maks. 300 karakter). Jumlah suka dan komentar berubah realtime. Pemilik postingan bisa menghapus postingannya (suka dan komentarnya ikut terhapus) dan komentar orang lain di postingannya; penulis komentar bisa menghapus komentarnya; admin bisa menghapus apa saja. Postingan baru dari orang lain memunculkan angka di menu saat panelnya tidak dibuka. Admin yang membatasi pesan sebuah akun ke 0 juga mencegahnya memposting dan berkomentar; akun yang diblokir tidak bisa memposting, berkomentar, atau memberi suka.
 - **Beranda** (sengaja dibuat ringkas): sapaan, 4 obrolan terbaru, 5 orang online teratas, pembaruan terbaru, dan ajakan login untuk tamu. Pesan yang belum dibaca muncul sebagai angka di menu Chat dan titik di daftar obrolan. Tombol lonceng di bilah atas membuka daftar pembaruan lengkap, dengan titik merah saat ada info baru.
 - **Profil**: avatar, nama, label akun, email, bio, info akun (ID dan tanggal bergabung), ubah nama tampilan dan bio (akun Google), jatah tamu, saklar mode gelap, login/keluar. Setiap info hanya tampil satu kali.
 - **Foto profil**: akun Google (User dan Admin) bisa ganti/hapus foto lewat menu Profil; tamu tidak bisa. Foto dipotong persegi dan dikecilkan otomatis di browser (192 px, JPEG), lalu disimpan di `avatars/{uid}`. Foto tampil di samping pesan, Beranda, dan daftar online. Siapa pun (termasuk tamu) bisa mengetuk foto orang untuk membuka profilnya, **hanya lihat**: label Admin atau Tamu (akun Google biasa tanpa label), status online, dan bio kalau ada. Admin mengganti/menghapus foto orang lain lewat Panel admin → "Cek & atur pengguna", bukan dari kartu profil.
@@ -27,7 +28,7 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 - **Riwayat pesan**: tombol "Muat pesan lama" membuka hingga 1000 pesan terakhir, 100 pesan per muatan (tidak otomatis saat scroll). Admin bisa menghapus N pesan terlama lewat Panel admin.
 - **Admin: cek profil & atur pengguna** (Panel admin → "Cek & atur pengguna", atau menu pesan → "Cek profil pengirim"). Cari lewat ID lengkap, 3+ huruf awal ID, atau nama. Kartu profil menampilkan nama, jenis akun (Admin/Akun Google/Tamu), status online, bio, 5 pesan terakhir, dan status blokir. Dari kartu yang sama admin bisa mengatur per pengguna: batas pesan per 24 jam, batas ganti nama per 24 jam (tamu), panjang maksimal pesan, dan larangan kirim foto/file. Kolom dikosongkan = pakai bawaan. Pengaturan langsung berlaku dan ditegakkan juga oleh Database Rules.
 - **Indikator online**: jumlah orang yang sedang online tampil di bawah judul chat.
-- **Mode terang/gelap**: mengikuti setelan perangkat dan bisa diganti manual lewat saklar di Profil → Pengaturan. Palet klasik biru tinta (navy) dan abu-abu netral hangat, warna solid tanpa gradasi. Semua warna ada sebagai variabel di blok `Tema` pada `assets/css/style.css` (`--primary`, `--accent`, `--header`, `--me`, `--other`, dan seterusnya), jadi ganti tampilan cukup edit di sana. Warna `theme-color` (bar browser HP) ada di `index.html`, `404.html`, dan fungsi `terapkanTema` di `main.js`.
+- **Mode terang/gelap**: mengikuti setelan perangkat dan bisa diganti manual lewat saklar di Profil → Pengaturan.
 - **Menu "Yang baru"**: daftar pembaruan (tombol lonceng di Beranda) dengan titik merah saat ada info baru.
 - **Batas pesan tamu** per 24 jam, dijaga di sisi klien dan di Database Rules.
 
@@ -53,6 +54,8 @@ Dibangun dengan HTML, CSS, dan JavaScript murni (tanpa framework dan tanpa prose
 | --------------------- | --------------------------------- | ------------------------- |
 | Kirim pesan teks      | Ya, dibatasi per 24 jam           | Ya, tanpa batas           |
 | Kirim foto/file       | Tidak                             | Ya                        |
+| Lihat postingan dan beri suka | Ya                        | Ya                        |
+| Buat postingan dan komentar   | Tidak                     | Ya                        |
 | Centang terverifikasi | Tidak                             | Ya                        |
 | Nama                  | Diisi sendiri (maks. 24 karakter, ganti max 5x/hari) | Otomatis dari akun Google, bisa diganti |
 | Foto profil dan bio   | Tidak                             | Ya                        |
@@ -70,6 +73,10 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | Ukuran file biasa                 | 500 KB            |
 | Riwayat pesan yang bisa dibuka    | 1000 pesan terbaru |
 | Pesan per muatan                  | 100 pesan         |
+| Panjang postingan                 | 500 karakter      |
+| Panjang komentar                  | 300 karakter      |
+| Postingan per muatan              | 20 postingan      |
+| Jeda antar postingan / komentar   | 5 detik / 2 detik (sisi klien) |
 
 > **Catatan:** `database.rules.json` memakai plafon yang lebih longgar sebagai pengaman terakhir (maks. 30 pesan tamu per 24 jam, 5 ganti nama tamu per 24 jam, file 512000 byte). Jika mengubah angka di `config.js`, sesuaikan juga aturan terkait di `database.rules.json`.
 
@@ -94,12 +101,14 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 │   ├── css/
 │   │   ├── style.css        # Gaya utama chat, dialog, dan tema terang/gelap
 │   │   ├── panels.css       # Kerangka menu + panel, Beranda, Profil
+│   │   ├── postingan.css    # Panel Postingan: kartu, suka, komentar
 │   │   └── 404.css
 │   └── js/
 │       ├── main.js          # Logika utama: auth, chat, reply, hapus, upload, presence
 │       ├── config.js        # Konfigurasi Firebase dan LIMITS
 │       ├── nav.js           # Perpindahan panel, badge menu, kartu akun di menu samping
 │       ├── beranda.js       # Panel Beranda
+│       ├── postingan.js     # Panel Postingan: feed realtime, posting, suka, komentar
 │       ├── profil.js        # Panel Profil: nama, bio, foto, info akun, pengaturan
 │       ├── profil-lihat.js  # Kartu profil orang lain (hanya lihat), terbuka saat foto diketuk
 │       ├── foto.js          # Foto profil: kecilkan gambar, simpan ke avatars/{uid}, cache
@@ -121,6 +130,9 @@ Semua batas ada di `assets/js/config.js` (objek `LIMITS`).
 | Path                       | Isi                                                                                     | Akses                                          |
 | -------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `chat/{messageId}`         | Pesan: `uid`, `name`, `timestamp`, `text` atau `file`, `verified`, `replyTo`, `deleted` | Baca: pengguna login. Tulis: pemilik pesan     |
+| `posts/{postId}`           | Postingan: `uid`, `name`, `text`, `timestamp`                                           | Baca: pengguna login. Tulis: akun Google (buat), pemilik atau admin (hapus) |
+| `postLikes/{postId}/{uid}` | Suka: `true`. Satu akun satu suka                                                       | Baca: pengguna login. Tulis: pemilik suka itu; pemilik postingan/admin boleh menghapus semuanya |
+| `postComments/{postId}/{commentId}` | Komentar: `uid`, `name`, `text`, `timestamp`                                   | Baca: pengguna login. Tulis: akun Google (buat), penulis, pemilik postingan, atau admin (hapus) |
 | `files/{fileId}`           | Data file sebagai data URL base64 (maks. 512000 byte)                                   | Baca: pengguna login. Tulis: hanya akun Google |
 | `users/{uid}`              | Status online: `name`, `online`, `lastSeen`                                             | Baca: pengguna login. Tulis: pemilik           |
 | `hidden/{uid}/{messageId}` | Pesan yang disembunyikan ("Hapus untuk saya")                                           | Hanya pemilik                                  |
